@@ -117,12 +117,15 @@ export const generateFilterString = (filters: Filter[]) => {
   return outStr;
 };
 
-export function generateHLFilterString(key: string, cmps: string[]): string {
-  if ( cmps.length === 0 ) {
-    return ""
+export function generateHLFilterString(key: string, cmps: string[], and = true): string {
+  if (cmps.length === 0) {
+    return '';
   }
-  const formatted = `(${cmps.map(s => `'${s}'`).join(",")})`;
-  return `AND ( ${key} IN ${formatted} )`
+  const formatted = `(${cmps.map((s) => `'${s}'`).join(',')})`;
+  if (and) {
+    return `AND ( ${key} IN ${formatted} )`;
+  }
+  return `( ${key} IN ${formatted} )`;
 }
 
 export function parseFilterString(str: string): Filter[] {
@@ -176,11 +179,10 @@ export function getFieldNames(keys: string[], standardKeys: string[], labels: st
   return [...outList, ...labels];
 }
 
-
 export function parseTimeRangeRaw(t: string | DateTime): string {
   if (isDateTime(t)) {
-    return t.toISOString()
+    return t.toISOString();
   } else {
-    return t
+    return t;
   }
 }

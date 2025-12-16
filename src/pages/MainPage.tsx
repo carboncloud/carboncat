@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Field, rangeUtil, TimeRange } from '@grafana/data';
+import { rangeUtil, TimeRange } from '@grafana/data';
 import { RefreshPicker, TimeRangePicker, useTheme2 } from '@grafana/ui';
 import '../style.js';
 import { SimpleOptions } from 'types/filters';
@@ -31,11 +31,12 @@ import { Settings } from 'components/Settings';
 import { NotificationView } from 'components/NotificationView';
 import { SaveView } from 'components/SaveView';
 import { ReleaseMessage } from 'components/ReleaseMessage';
+import { LogDetailsSelection } from 'types/types.js';
 
 function PageOne() {
   const theme = useTheme2();
 
-  const keys = ['level', 'timestamp', 'traceID', 'spanID', 'body'];
+  const keys = ['level', 'timestamp', 'traceID', 'spanID', 'app', 'service', 'body'];
 
   const [chartWidth, setChartWidth] = useState<number>(200);
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -66,40 +67,23 @@ function PageOne() {
     userDispatch({ type: 'SET_TIMERANGE', payload: value });
   };
 
-  const handleSetLogDetails = (row: number | undefined) => {
-    if (userState.logDetails === row) {
+  const handleSetLogDetails = (ld: LogDetailsSelection | undefined) => {
+    if (
+      userState.selectedRow?.timestamp === ld?.timestamp &&
+      userState.selectedRow?.app === ld?.app &&
+      userState.selectedRow?.service === ld?.service &&
+      userState.selectedRow?.body === ld?.body
+    ) {
       userDispatch({ type: 'CLOSE_LOG_DETAILS' });
       return;
-    } else if (row === undefined) {
+    } else if (ld === undefined) {
       userDispatch({ type: 'CLOSE_LOG_DETAILS' });
       return;
     }
-    userDispatch({ type: 'SET_LOG_DETAILS', payload: row });
+    userDispatch({ type: 'SET_LOG_DETAILS', payload: ld });
   };
 
-  let labels: string[] = [];
-
-  appState.logFields.forEach((field: Field) => {
-    if (field.name === 'labels') {
-      field.values.forEach((v) => {
-        Object.keys(v).forEach((k: string) => {
-          const fullK = 'labels.' + k;
-          if (!labels.includes(fullK)) {
-            labels.push(fullK);
-          }
-        });
-      });
-    }
-  });
-
-  userState.selectedLabels.forEach((l: string) => {
-    if (!labels.includes(l)) {
-      labels.push(l);
-    }
-  });
-
   const fieldsList = getFieldNames(keys, userState.selectedFields, userState.selectedLabels);
-  labels = labels.sort();
 
   const options: SimpleOptions = {
     traceUrl: 'd/cc-trace-viewer/trace-viewer?var-traceID={{ traceID }}',
@@ -128,7 +112,7 @@ function PageOne() {
       </div>
 
       <div className="flex items-center">
-        <Searchbar fields={appState.logFields} labels={[...keys, ...labels]} />
+        <Searchbar fields={appState.logFields} labels={[...keys, ...appState.labels]} />
         <ToggleButtonGroup
           defaultValue={userState.datasource}
           options={DATASOURCES}
@@ -196,7 +180,7 @@ function PageOne() {
       </div>
 
       <div className="flex flex-grow gap-2 min-h-0 max-h-full">
-        <SideMenu fields={keys} labels={labels} />
+        <SideMenu fields={keys} labels={appState.labels} />
         <div className="relative flex-grow">
           <Table
             options={options}
@@ -216,12 +200,7 @@ function PageOne() {
               <div className="w-12 h-12 rounded-full border-4 animate-spin border-[#28A0A6] border-t-transparent"></div>
             </div>
           )}
-          <LogDetails
-            options={options}
-            fields={appState.logFields}
-            rowIndex={userState.logDetails}
-            setLogDetails={handleSetLogDetails}
-          />
+          <LogDetails options={options} fields={appState.detailedField} setLogDetails={handleSetLogDetails} />
         </div>
       </div>
     </div>

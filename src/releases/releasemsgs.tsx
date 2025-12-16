@@ -32,4 +32,20 @@ export const Releases: Record<string, ReleaseInfo> = {
       </>
     ),
   },
+  '0.0.11': {
+    notes: (
+      <>
+        Implements a smarter batch query to Clickhouse to minimise data transfer to frontend. Now we only fetch the data
+        you as a user has selected to view, which reduces the data size massively and gives a much faster query!
+        <br />
+        <br />
+        <b>Streaming mode</b> is still there, but <b>DONT USE IT</b>. The batch mode should out perform it by miles.
+        <br />
+        <br />
+        🎄 Merry Chrysler 🎄
+        <br />
+        Scaffolders
+      </>
+    ),
+  },
 };

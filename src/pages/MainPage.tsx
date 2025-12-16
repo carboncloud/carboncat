@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Field, rangeUtil, TimeRange } from '@grafana/data';
+import { rangeUtil, TimeRange } from '@grafana/data';
 import { RefreshPicker, TimeRangePicker, useTheme2 } from '@grafana/ui';
 import '../style.js';
 import { SimpleOptions } from 'types/filters';
@@ -77,29 +77,7 @@ function PageOne() {
     userDispatch({ type: 'SET_LOG_DETAILS', payload: row });
   };
 
-  let labels: string[] = [];
-
-  appState.logFields.forEach((field: Field) => {
-    if (field.name === 'labels') {
-      field.values.forEach((v) => {
-        Object.keys(v).forEach((k: string) => {
-          const fullK = 'labels.' + k;
-          if (!labels.includes(fullK)) {
-            labels.push(fullK);
-          }
-        });
-      });
-    }
-  });
-
-  userState.selectedLabels.forEach((l: string) => {
-    if (!labels.includes(l)) {
-      labels.push(l);
-    }
-  });
-
   const fieldsList = getFieldNames(keys, userState.selectedFields, userState.selectedLabels);
-  labels = labels.sort();
 
   const options: SimpleOptions = {
     traceUrl: 'd/cc-trace-viewer/trace-viewer?var-traceID={{ traceID }}',
@@ -128,7 +106,7 @@ function PageOne() {
       </div>
 
       <div className="flex items-center">
-        <Searchbar fields={appState.logFields} labels={[...keys, ...labels]} />
+        <Searchbar fields={appState.logFields} labels={[...keys, ...appState.labels]} />
         <ToggleButtonGroup
           defaultValue={userState.datasource}
           options={DATASOURCES}
@@ -196,7 +174,7 @@ function PageOne() {
       </div>
 
       <div className="flex flex-grow gap-2 min-h-0 max-h-full">
-        <SideMenu fields={keys} labels={labels} />
+        <SideMenu fields={keys} labels={appState.labels} />
         <div className="relative flex-grow">
           <Table
             options={options}

@@ -1,22 +1,55 @@
-import { DataFrame, DataQueryRequest, Field, TimeRange } from "@grafana/data";
+import { DataFrame, DataQueryRequest, Field, TimeRange } from '@grafana/data';
 import { ClickHouseQuery } from '../types/clickhouse';
-import { getDataSourceSrv } from "@grafana/runtime";
+import { getDataSourceSrv } from '@grafana/runtime';
 import { lastValueFrom, isObservable, Observable } from 'rxjs';
-import { generateFilterString, generateHLFilterString } from "./functions";
-import { Filter } from "types/filters";
-
+import { generateFilterString, generateHLFilterString } from './functions';
+import { Filter } from 'types/filters';
 
 // const keysToRemoveFromDistinct = ["spanID", "traceID", "body"];
 
 const keyMap: Record<string, string> = {
-  spanID: "SpanId",
-  traceID: "TraceId",
-  body: "Body",
+  spanID: 'SpanId',
+  traceID: 'TraceId',
+  body: 'Body',
 };
 
+export function generateLogQuery(searchTerm: string, labels: string[], filters: Filter[], logLevels: string[]): string {
+  const logAttrs = labels.map(
+    (l: string) => `'${l.replaceAll('labels.', '')}', LogAttributes['${l.replaceAll('labels.', '')}']`
+  );
 
-export function generateLogQuery(searchTerm: string, filters: Filter[], logLevels: string[]): string {
-  const rawSql= `SELECT
+  let lMap = "'{}' AS labels,";
+
+  if (logAttrs.length > 0) {
+    lMap = `
+    map(
+        ${logAttrs.join(',\n ')}
+    ) AS labels, 
+`;
+  }
+
+  const rawSql = `SELECT
+    Timestamp as "timestamp",
+    Body as "body",
+    SeverityText as "level",
+    ${lMap}
+    TraceId as "traceID",
+    SpanId as "spanID"
+  FROM "otel_logs"
+  WHERE
+    ( timestamp >= $__fromTime AND timestamp <= $__toTime )
+    AND (body ILIKE '%${searchTerm}%')
+    AND level IN ('DEBUG','INFO','WARN','ERROR','FATAL')
+    AND ('' = '' OR traceID = '')
+    ${generateHLFilterString('level', logLevels)}
+    ${generateFilterString(filters)}
+  ORDER BY timestamp DESC LIMIT 20000`;
+
+  return rawSql;
+}
+
+export function generateLogQueryOld(searchTerm: string, filters: Filter[], logLevels: string[]): string {
+  const rawSql = `SELECT
     Timestamp as "timestamp",
     Body as "body",
     SeverityText as "level",
@@ -29,25 +62,51 @@ export function generateLogQuery(searchTerm: string, filters: Filter[], logLevel
     AND (body ILIKE '%${searchTerm}%')
     AND level IN ('DEBUG','INFO','WARN','ERROR','FATAL')
     AND ('' = '' OR traceID = '')
-    ${generateHLFilterString("level", logLevels)}
+    ${generateHLFilterString('level', logLevels)}
     ${generateFilterString(filters)}
-  ORDER BY timestamp DESC LIMIT 20000`
+  ORDER BY timestamp DESC LIMIT 20000`;
 
-  return rawSql
+  return rawSql;
 }
 
-export async function runLogQuery(dsName: string, timeRange: TimeRange, rawSql: string, setData: (data: Field[]) => void): Promise<void> {
+export async function getLabels(dsName: string, timeRange: TimeRange, setData: (data: Field[]) => void): Promise<void> {
+  const rawSql = `
+    SELECT DISTINCT arrayJoin(mapKeys(LogAttributes)) AS key
+    FROM otel_logs
+    WHERE $__timeFilter(Timestamp);
+`;
+
   const fields = await runQuery(rawSql, dsName, timeRange);
   setData(fields);
 }
 
-export function runLogQueryStreaming(dsName: string, timeRange: TimeRange, rawSql: string, setData: (data: Field[], isComplete: boolean) => void, chunkSize = 500): Observable<Field[]> {
+export async function runLogQuery(
+  dsName: string,
+  timeRange: TimeRange,
+  rawSql: string,
+  setData: (data: Field[]) => void
+): Promise<void> {
+  const fields = await runQuery(rawSql, dsName, timeRange);
+  setData(fields);
+}
+
+export function runLogQueryStreaming(
+  dsName: string,
+  timeRange: TimeRange,
+  rawSql: string,
+  setData: (data: Field[], isComplete: boolean) => void,
+  chunkSize = 500
+): Observable<Field[]> {
   return runQueryStreaming(rawSql, dsName, timeRange, setData, chunkSize);
 }
 
-
-export async function runBars(dsName: string, timeRange: TimeRange, rawSql: string, setData: (data: Field[]) => void): Promise<void> {
-const wrappedSql = `
+export async function runBars(
+  dsName: string,
+  timeRange: TimeRange,
+  rawSql: string,
+  setData: (data: Field[]) => void
+): Promise<void> {
+  const wrappedSql = `
 WITH
   $__toTime - $__fromTime AS total_time,
   CASE
@@ -74,14 +133,23 @@ ORDER BY time;
   setData(fields);
 }
 
-export async function runBars2(dsName: string, timeRange: TimeRange, searchTerm: string, filters: Filter[], apps: string[], logLevels: string[], components: string[], teams: string[], setData: (data: Field[]) => void): Promise<void> {
-  const updatedFilters = filters
-    .map(f => ({
-      ...f,
-      key: keyMap[f.key] || f.key, // if key exists in map, use mapped value; otherwise, keep original
-    }));
+export async function runBars2(
+  dsName: string,
+  timeRange: TimeRange,
+  searchTerm: string,
+  filters: Filter[],
+  apps: string[],
+  logLevels: string[],
+  components: string[],
+  teams: string[],
+  setData: (data: Field[]) => void
+): Promise<void> {
+  const updatedFilters = filters.map((f) => ({
+    ...f,
+    key: keyMap[f.key] || f.key, // if key exists in map, use mapped value; otherwise, keep original
+  }));
 
-  const rawSql= `WITH
+  const rawSql = `WITH
     $__toTime - $__fromTime AS total_time, -- Total duration of the timespan "A"
     CASE
         WHEN total_time < 10 THEN total_time / 1
@@ -108,12 +176,12 @@ FROM "otel_logs"
     ${generateHLFilterString("LogAttributes['app']", apps)}
     ${generateHLFilterString("LogAttributes['component']", components)}
     ${generateHLFilterString("LogAttributes['team']", teams)}
-    ${generateHLFilterString("SeverityText", logLevels)}
+    ${generateHLFilterString('SeverityText', logLevels)}
     ${generateFilterString(updatedFilters)}
 GROUP BY time
 ORDER BY time;
 
-  `
+  `;
 
   const fields = await runQuery(rawSql, dsName, timeRange);
   setData(fields);
@@ -121,40 +189,38 @@ ORDER BY time;
 
 async function runQuery(rawSql: string, dsName: string, timeRange: TimeRange): Promise<Field[]> {
   try {
-    const ds = await getDataSourceSrv().get(
-      dsName
-    );
+    const ds = await getDataSourceSrv().get(dsName);
 
     const request: DataQueryRequest<ClickHouseQuery> = {
-        targets: [
-          {
-            refId: 'A',
-            rawSql: rawSql,
-            // Logdata
-            format: 2,
-          },
-        ],
-        range: timeRange,
-        interval: '1m',
-        intervalMs: 60_000,
-        maxDataPoints: 1000,
-        scopedVars: {},
-        timezone: 'browser',
-        app: 'panel-editor',
-        startTime: Date.now(),
-      } as DataQueryRequest<ClickHouseQuery>;
+      targets: [
+        {
+          refId: 'A',
+          rawSql: rawSql,
+          // Logdata
+          format: 2,
+        },
+      ],
+      range: timeRange,
+      interval: '1m',
+      intervalMs: 60_000,
+      maxDataPoints: 1000,
+      scopedVars: {},
+      timezone: 'browser',
+      app: 'panel-editor',
+      startTime: Date.now(),
+    } as DataQueryRequest<ClickHouseQuery>;
 
     const queryResult = ds.query(request);
     const response = isObservable(queryResult) ? await lastValueFrom(queryResult) : await queryResult;
-    
+
     // Check for errors in the response
     if (Array.isArray(response.errors) && response.errors.length > 0) {
       const errorMessage = response.errors[0]?.message || 'Query failed';
       throw new Error(errorMessage);
     }
-    
-    const data = response.data as DataFrame[]
-    
+
+    const data = response.data as DataFrame[];
+
     // Check if we have valid data
     if (!data || data.length === 0) {
       return [];
@@ -167,8 +233,14 @@ async function runQuery(rawSql: string, dsName: string, timeRange: TimeRange): P
   }
 }
 
-function runQueryStreaming(rawSql: string, dsName: string, timeRange: TimeRange, onDataUpdate: (fields: Field[], isComplete: boolean) => void, chunkSize = 500): Observable<Field[]> {
-  return new Observable(observer => {
+function runQueryStreaming(
+  rawSql: string,
+  dsName: string,
+  timeRange: TimeRange,
+  onDataUpdate: (fields: Field[], isComplete: boolean) => void,
+  chunkSize = 500
+): Observable<Field[]> {
+  return new Observable((observer) => {
     let cancelled = false;
     let offset = 0;
     let accumulatedFields: Field[] = [];
@@ -176,16 +248,16 @@ function runQueryStreaming(rawSql: string, dsName: string, timeRange: TimeRange,
     const executeChunk = async () => {
       try {
         const ds = await getDataSourceSrv().get(dsName);
-        
+
         // Replace existing LIMIT clause or add new one with OFFSET (ClickHouse syntax)
         let chunkedSql = rawSql;
-        
+
         // Remove existing LIMIT clause if it exists
         chunkedSql = chunkedSql.replace(/\s+LIMIT\s+\d+\s*$/i, '');
-        
+
         // Add new LIMIT with offset
         chunkedSql = `${chunkedSql} LIMIT ${offset}, ${chunkSize}`;
-        
+
         const request: DataQueryRequest<ClickHouseQuery> = {
           targets: [
             {
@@ -206,15 +278,15 @@ function runQueryStreaming(rawSql: string, dsName: string, timeRange: TimeRange,
 
         const queryResult = ds.query(request);
         const response = isObservable(queryResult) ? await lastValueFrom(queryResult) : await queryResult;
-        
+
         // Check for errors
         if (Array.isArray(response.errors) && response.errors.length > 0) {
           const errorMessage = response.errors[0]?.message || 'Query failed';
           throw new Error(errorMessage);
         }
-        
+
         const data = response.data as DataFrame[];
-        
+
         if (!data || data.length === 0 || !data[0]?.fields) {
           // No more data, complete the stream
           onDataUpdate(accumulatedFields, true);
@@ -237,18 +309,15 @@ function runQueryStreaming(rawSql: string, dsName: string, timeRange: TimeRange,
         // Merge fields with accumulated data
         if (accumulatedFields.length === 0) {
           // First chunk - initialize accumulated fields
-          accumulatedFields = chunkFields.map(field => ({
+          accumulatedFields = chunkFields.map((field) => ({
             ...field,
-            values: [...field.values]
+            values: [...field.values],
           }));
         } else {
           // Subsequent chunks - append values to existing fields
           chunkFields.forEach((field, index) => {
             if (accumulatedFields[index]) {
-              accumulatedFields[index].values = [
-                ...accumulatedFields[index].values,
-                ...field.values
-              ];
+              accumulatedFields[index].values = [...accumulatedFields[index].values, ...field.values];
             }
           });
         }
@@ -275,7 +344,6 @@ function runQueryStreaming(rawSql: string, dsName: string, timeRange: TimeRange,
             }
           }, 10);
         }
-
       } catch (err: any) {
         console.log(err.message || 'Unknown error');
         observer.error(err);

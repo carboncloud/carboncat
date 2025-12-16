@@ -1,59 +1,95 @@
-import { useEffect, useRef } from "react";
-import { useSharedState } from "./StateContext";
-import { generateLogQuery, runBars, runLogQuery, runLogQueryStreaming } from "utils/clickhouse";
-import { Field, rangeUtil } from "@grafana/data";
-import { Subscription } from "rxjs";
+import { useEffect, useRef } from 'react';
+import { useSharedState } from './StateContext';
+import { generateLogQuery, getLabels, runBars, runLogQuery, runLogQueryStreaming } from 'utils/clickhouse';
+import { Field, rangeUtil } from '@grafana/data';
+import { Subscription } from 'rxjs';
 
-export function useClickHouse()  {
-  const {userState, appState, appDispatch } = useSharedState();
+export function useClickHouse() {
+  const { userState, appState, appDispatch } = useSharedState();
 
   const lastRequestRef = useRef<string | null>(null);
   const streamingSubscriptionRef = useRef<Subscription | null>(null);
 
   const setLogFields = (f: Field[]) => {
-    appDispatch({type:"SET_LOG_FIELDS", payload: f})
-  }
+    appDispatch({ type: 'SET_LOG_FIELDS', payload: f });
+  };
+
+  const setLabels = (f: Field[]) => {
+    if (f.length === 0) {
+      return;
+    }
+    const l = (f[0].values as string[]).map((label: string) => 'labels.' + label);
+    userState.selectedLabels.forEach((sl: string) => {
+      if (!l.includes(sl)) {
+        l.push(sl);
+      }
+    });
+    appDispatch({ type: 'SET_LABELS', payload: l.sort() });
+  };
 
   const setLogFieldsStreaming = (f: Field[], isComplete: boolean) => {
-    appDispatch({type:"SET_LOG_FIELDS", payload: f})
+    appDispatch({ type: 'SET_LOG_FIELDS', payload: f });
     if (isComplete) {
-      appDispatch({type:"NOT_LOADING"})
+      appDispatch({ type: 'NOT_LOADING' });
     }
-  }
+  };
 
   const setLevelFields = (f: Field[]) => {
-    appDispatch({type:"SET_LEVEL_FIELDS", payload: f})
-  }
+    appDispatch({ type: 'SET_LEVEL_FIELDS', payload: f });
+  };
 
   useEffect(() => {
     const sqlExpr =
-      userState.mode === "sql"
+      userState.mode === 'sql'
         ? (userState.sqlExpression as string)
-        : generateLogQuery(
-            userState.searchTerm,
-            userState.filters,
-            userState.logLevels
-          );
+        : generateLogQuery(userState.searchTerm, userState.selectedLabels, userState.filters, userState.logLevels);
 
-    appDispatch({ type: "SET_SQL", payload: sqlExpr });
-  }, [userState.mode, userState.sqlExpression, userState.searchTerm, userState.filters, userState.logLevels]); // eslint-disable-line react-hooks/exhaustive-deps
+    appDispatch({ type: 'SET_SQL', payload: sqlExpr });
+  }, [
+    userState.mode,
+    userState.sqlExpression,
+    userState.searchTerm,
+    userState.selectedLabels,
+    userState.filters,
+    userState.logLevels,
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const { sqlExpression } = appState;
     const { datasource, timeFrom, timeTo } = userState;
-    if (!sqlExpression || !datasource || !timeFrom || !timeTo) { return };
+    if (!sqlExpression || !datasource || !timeFrom || !timeTo) {
+      return;
+    }
 
     const requestKey = JSON.stringify({ sqlExpression, datasource, timeFrom, timeTo });
 
-    if (lastRequestRef.current === requestKey) { return };
+    if (lastRequestRef.current === requestKey) {
+      return;
+    }
     lastRequestRef.current = requestKey;
 
     refreshSqlData();
   }, [appState.sqlExpression, userState.datasource, userState.timeFrom, userState.timeTo]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const refreshLabels = () => {
+    Promise.all([
+      getLabels(
+        userState.datasource,
+        rangeUtil.convertRawToRange({ from: userState.timeFrom, to: userState.timeTo }),
+        setLabels
+      ),
+    ])
+      .catch((r: any) => {
+        appDispatch({ type: 'SET_ERROR', payload: r.message });
+      })
+      .finally(() => {
+        appDispatch({ type: 'NOT_LOADING' });
+      });
+  };
+
   const refreshSqlData = () => {
     if (!appState.sqlExpression) {
-      return
+      return;
     }
 
     if (userState.streamingMode) {
@@ -61,32 +97,32 @@ export function useClickHouse()  {
       return;
     }
 
-    appDispatch({type:"LOADING"})
+    appDispatch({ type: 'LOADING' });
     Promise.all([
       runLogQuery(
         userState.datasource,
-        rangeUtil.convertRawToRange({ from:userState.timeFrom, to:userState.timeTo }),
+        rangeUtil.convertRawToRange({ from: userState.timeFrom, to: userState.timeTo }),
         appState.sqlExpression,
         setLogFields
       ),
       runBars(
-         userState.datasource,
-         rangeUtil.convertRawToRange({ from:userState.timeFrom, to:userState.timeTo }),
-         appState.sqlExpression,
-         setLevelFields
-       )
+        userState.datasource,
+        rangeUtil.convertRawToRange({ from: userState.timeFrom, to: userState.timeTo }),
+        appState.sqlExpression,
+        setLevelFields
+      ),
     ])
       .catch((r: any) => {
-        appDispatch({type:"SET_ERROR", payload:r.message})
+        appDispatch({ type: 'SET_ERROR', payload: r.message });
       })
       .finally(() => {
-        appDispatch({type:"NOT_LOADING"})
+        appDispatch({ type: 'NOT_LOADING' });
       });
   };
 
   const refreshSqlDataStreaming = (chunkSize = 500) => {
     if (!appState.sqlExpression) {
-      return
+      return;
     }
 
     // Cancel any existing streaming query
@@ -95,23 +131,23 @@ export function useClickHouse()  {
       streamingSubscriptionRef.current = null;
     }
 
-    appDispatch({type:"LOADING"})
-    
+    appDispatch({ type: 'LOADING' });
+
     const subscription = runLogQueryStreaming(
       userState.datasource,
-      rangeUtil.convertRawToRange({ from:userState.timeFrom, to:userState.timeTo }),
+      rangeUtil.convertRawToRange({ from: userState.timeFrom, to: userState.timeTo }),
       appState.sqlExpression,
       setLogFieldsStreaming,
       chunkSize
     ).subscribe({
       error: (error: any) => {
-        appDispatch({type:"SET_ERROR", payload: error.message})
-        appDispatch({type:"NOT_LOADING"})
+        appDispatch({ type: 'SET_ERROR', payload: error.message });
+        appDispatch({ type: 'NOT_LOADING' });
         streamingSubscriptionRef.current = null;
       },
       complete: () => {
         streamingSubscriptionRef.current = null;
-      }
+      },
     });
 
     // Store the subscription for potential cancellation
@@ -120,11 +156,11 @@ export function useClickHouse()  {
     // Also run bars query in parallel (not streamed)
     runBars(
       userState.datasource,
-      rangeUtil.convertRawToRange({ from:userState.timeFrom, to:userState.timeTo }),
+      rangeUtil.convertRawToRange({ from: userState.timeFrom, to: userState.timeTo }),
       appState.sqlExpression,
       setLevelFields
     ).catch((r: any) => {
-      appDispatch({type:"SET_ERROR", payload: r.message})
+      appDispatch({ type: 'SET_ERROR', payload: r.message });
     });
 
     return subscription;
@@ -134,31 +170,42 @@ export function useClickHouse()  {
     if (streamingSubscriptionRef.current) {
       streamingSubscriptionRef.current.unsubscribe();
       streamingSubscriptionRef.current = null;
-      appDispatch({type:"NOT_LOADING"});
+      appDispatch({ type: 'NOT_LOADING' });
     }
   };
 
   useEffect(() => {
-    if (!userState.refreshInterval) { return };
+    if (!userState.refreshInterval) {
+      return;
+    }
 
     const parseInterval = (interval: string): number => {
       const match = interval.match(/^(\d+)([smhd])$/);
-      if (!match) { return 0 };
+      if (!match) {
+        return 0;
+      }
 
       const value = parseInt(match[1]);
       const unit = match[2];
 
       switch (unit) {
-        case 's': return value * 1000;
-        case 'm': return value * 60 * 1000;
-        case 'h': return value * 60 * 60 * 1000;
-        case 'd': return value * 24 * 60 * 60 * 1000;
-        default: return 0;
+        case 's':
+          return value * 1000;
+        case 'm':
+          return value * 60 * 1000;
+        case 'h':
+          return value * 60 * 60 * 1000;
+        case 'd':
+          return value * 24 * 60 * 60 * 1000;
+        default:
+          return 0;
       }
     };
 
     const intervalMs = parseInterval(userState.refreshInterval);
-    if (intervalMs === 0) { return };
+    if (intervalMs === 0) {
+      return;
+    }
 
     const timer = setInterval(() => {
       refreshSqlData();
@@ -167,9 +214,13 @@ export function useClickHouse()  {
     return () => clearInterval(timer);
   }, [userState.refreshInterval, userState.timeFrom, userState.timeTo, appState.sqlExpression]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    refreshLabels();
+  }, [userState.timeFrom, userState.timeTo]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return {
     refreshSqlData,
     refreshSqlDataStreaming,
-    cancelQuery
-  }
+    cancelQuery,
+  };
 }

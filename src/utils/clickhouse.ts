@@ -6,6 +6,7 @@ import { generateFilterString, generateHLFilterString } from './functions';
 import { Filter } from 'types/filters';
 
 // const keysToRemoveFromDistinct = ["spanID", "traceID", "body"];
+const tableName = 'otel_logs_cc';
 
 const keyMap: Record<string, string> = {
   spanID: 'SpanId',
@@ -35,7 +36,7 @@ export function generateLogQuery(searchTerm: string, labels: string[], filters: 
     ${lMap}
     TraceId as "traceID",
     SpanId as "spanID"
-  FROM "otel_logs"
+  FROM ${tableName}
   WHERE
     ( timestamp >= $__fromTime AND timestamp <= $__toTime )
     AND (body ILIKE '%${searchTerm}%')
@@ -56,7 +57,7 @@ export function generateLogQueryOld(searchTerm: string, filters: Filter[], logLe
     LogAttributes as "labels",
     TraceId as "traceID",
     SpanId as "spanID"
-  FROM "otel_logs"
+  FROM ${tableName}
   WHERE
     ( timestamp >= $__fromTime AND timestamp <= $__toTime )
     AND (body ILIKE '%${searchTerm}%')
@@ -168,7 +169,7 @@ SELECT
     countIf(SeverityText = 'WARN') AS WARN,
     countIf(SeverityText = 'ERROR') AS ERROR,
     countIf(SeverityText = 'FATAL') AS FATAL
-FROM "otel_logs"
+FROM ${tableName}
  WHERE ( time >= $__fromTime AND time <= $__toTime )
     AND (Body ILIKE '%${searchTerm}%')
     AND SeverityText IN ('DEBUG','INFO','WARN','ERROR','FATAL')

@@ -35,7 +35,7 @@ import { ReleaseMessage } from 'components/ReleaseMessage';
 function PageOne() {
   const theme = useTheme2();
 
-  const keys = ['level', 'timestamp', 'traceID', 'spanID', 'body'];
+  const keys = ['level', 'timestamp', 'traceID', 'spanID', 'app', 'service', 'body'];
 
   const [chartWidth, setChartWidth] = useState<number>(200);
   const chartContainerRef = useRef<HTMLDivElement>(null);

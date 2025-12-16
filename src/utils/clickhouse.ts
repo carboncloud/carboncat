@@ -34,6 +34,8 @@ export function generateLogQuery(searchTerm: string, labels: string[], filters: 
     Body as "body",
     SeverityText as "level",
     ${lMap}
+    AppName as "app",
+    ComponentName as "service",
     TraceId as "traceID",
     SpanId as "spanID"
   FROM ${tableName}

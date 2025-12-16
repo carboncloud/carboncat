@@ -1,6 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { useSharedState } from './StateContext';
-import { generateLogQuery, getLabels, runBars, runLogQuery, runLogQueryStreaming } from 'utils/clickhouse';
+import {
+  generateLogQuery,
+  getLabels,
+  getLogDetails,
+  runBars,
+  runLogQuery,
+  runLogQueryStreaming,
+} from 'utils/clickhouse';
 import { Field, rangeUtil } from '@grafana/data';
 import { Subscription } from 'rxjs';
 
@@ -12,6 +19,10 @@ export function useClickHouse() {
 
   const setLogFields = (f: Field[]) => {
     appDispatch({ type: 'SET_LOG_FIELDS', payload: f });
+  };
+
+  const setLogDetails = (f: Field[]) => {
+    appDispatch({ type: 'SET_DETAILED_FIELD', payload: f });
   };
 
   const setLabels = (f: Field[]) => {
@@ -38,21 +49,25 @@ export function useClickHouse() {
     appDispatch({ type: 'SET_LEVEL_FIELDS', payload: f });
   };
 
-  useEffect(() => {
-    const sqlExpr =
-      userState.mode === 'sql'
-        ? (userState.sqlExpression as string)
-        : generateLogQuery(userState.searchTerm, userState.selectedLabels, userState.filters, userState.logLevels);
+  useEffect(
+    () => {
+      const sqlExpr =
+        userState.mode === 'sql'
+          ? (userState.sqlExpression as string)
+          : generateLogQuery(userState.searchTerm, userState.selectedLabels, userState.filters, userState.logLevels);
 
-    appDispatch({ type: 'SET_SQL', payload: sqlExpr });
-  }, [
-    userState.mode,
-    userState.sqlExpression,
-    userState.searchTerm,
-    userState.selectedLabels,
-    userState.filters,
-    userState.logLevels,
-  ]); // eslint-disable-line react-hooks/exhaustive-deps
+      appDispatch({ type: 'SET_SQL', payload: sqlExpr });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      userState.mode,
+      userState.sqlExpression,
+      userState.searchTerm,
+      userState.selectedLabels,
+      userState.filters,
+      userState.logLevels,
+    ]
+  );
 
   useEffect(() => {
     const { sqlExpression } = appState;
@@ -76,6 +91,8 @@ export function useClickHouse() {
       getLabels(
         userState.datasource,
         rangeUtil.convertRawToRange({ from: userState.timeFrom, to: userState.timeTo }),
+        userState.filters,
+        userState.logLevels,
         setLabels
       ),
     ])
@@ -91,6 +108,8 @@ export function useClickHouse() {
     if (!appState.sqlExpression) {
       return;
     }
+
+    refreshLabels();
 
     if (userState.streamingMode) {
       refreshSqlDataStreaming();
@@ -215,8 +234,27 @@ export function useClickHouse() {
   }, [userState.refreshInterval, userState.timeFrom, userState.timeTo, appState.sqlExpression]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    refreshLabels();
-  }, [userState.timeFrom, userState.timeTo]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (userState.selectedRow === null) {
+      return;
+    }
+    Promise.all([
+      getLogDetails(
+        userState.selectedRow.timestamp,
+        userState.selectedRow.app,
+        userState.selectedRow.service,
+        userState.selectedRow.body,
+        userState.datasource,
+        rangeUtil.convertRawToRange({ from: userState.timeFrom, to: userState.timeTo }),
+        setLogDetails
+      ),
+    ])
+      .catch((r: any) => {
+        appDispatch({ type: 'SET_ERROR', payload: r.message });
+      })
+      .finally(() => {
+        appDispatch({ type: 'NOT_LOADING' });
+      });
+  }, [userState.selectedRow]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     refreshSqlData,

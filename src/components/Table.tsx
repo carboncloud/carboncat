@@ -10,6 +10,7 @@ import clsx from 'clsx';
 import { SimpleOptions } from 'types/filters';
 import { prettifyHeaderNames } from 'utils/functions';
 import { useSharedState } from './StateContext';
+import { LogDetailsSelection } from 'types/types';
 
 export interface TableProps {
   options: SimpleOptions;
@@ -17,7 +18,7 @@ export interface TableProps {
   keys: string[];
   lineHeight: number;
   searchTerm: string;
-  setLogDetails: (idx: number | undefined) => void;
+  setLogDetails: (ld: LogDetailsSelection | undefined) => void;
 }
 
 interface CellContentProps {
@@ -28,13 +29,7 @@ interface CellContentProps {
   theme: any;
 }
 
-const CellContent: React.FC<CellContentProps> = ({
-  options,
-  columnName,
-  value,
-  searchTerm,
-  theme,
-}) => {
+const CellContent: React.FC<CellContentProps> = ({ options, columnName, value, searchTerm, theme }) => {
   let displayValue = value;
   const dateFormat = 'MMM DD HH:mm:ss.SSS';
 
@@ -112,7 +107,7 @@ const CellContent: React.FC<CellContentProps> = ({
               title="Add label to filter"
               onClick={(e) => {
                 e.stopPropagation();
-                userDispatch({type:"FILTER_ADD", payload:{key:columnName, operation:'=', value:displayValue}})
+                userDispatch({ type: 'FILTER_ADD', payload: { key: columnName, operation: '=', value: displayValue } });
               }}
             />
             <FontAwesomeIcon
@@ -122,7 +117,10 @@ const CellContent: React.FC<CellContentProps> = ({
               title="Remove label from filter"
               onClick={(e) => {
                 e.stopPropagation();
-                userDispatch({type:"FILTER_ADD", payload:{key:columnName, operation:'!=', value:displayValue}})
+                userDispatch({
+                  type: 'FILTER_ADD',
+                  payload: { key: columnName, operation: '!=', value: displayValue },
+                });
               }}
             />
             <FontAwesomeIcon
@@ -132,7 +130,10 @@ const CellContent: React.FC<CellContentProps> = ({
               title="View only this label"
               onClick={(e) => {
                 e.stopPropagation();
-                userDispatch({type:"FILTER_ONLY", payload:{key:columnName, operation:'=', value:displayValue}})
+                userDispatch({
+                  type: 'FILTER_ONLY',
+                  payload: { key: columnName, operation: '=', value: displayValue },
+                });
               }}
             />
           </div>
@@ -149,11 +150,11 @@ const CellContent: React.FC<CellContentProps> = ({
   if (columnName === 'traceID') {
     return (
       <div className="relative font-mono text-sm hover:underline truncate group">
-        { displayValue &&
+        {displayValue && (
           <a href={options.traceUrl.replace('{{ traceID }}', displayValue)} target="_blank" rel="noreferrer">
             <span className="block truncate">{displayValue}</span>
           </a>
-        }
+        )}
         <div
           className={clsx(
             'group-hover:flex hidden gap-1 absolute right-0 top-0 bg-gradient-to-l pl-20 pr-1 justify-end',
@@ -167,7 +168,7 @@ const CellContent: React.FC<CellContentProps> = ({
             title="Add label to filter"
             onClick={(e) => {
               e.stopPropagation();
-              userDispatch({type:"FILTER_ADD", payload:{key:columnName, operation:'=', value:displayValue}})
+              userDispatch({ type: 'FILTER_ADD', payload: { key: columnName, operation: '=', value: displayValue } });
             }}
           />
           <FontAwesomeIcon
@@ -177,7 +178,7 @@ const CellContent: React.FC<CellContentProps> = ({
             title="Remove label from filter"
             onClick={(e) => {
               e.stopPropagation();
-              userDispatch({type:"FILTER_ADD", payload:{key:columnName, operation:'!=', value:displayValue}})
+              userDispatch({ type: 'FILTER_ADD', payload: { key: columnName, operation: '!=', value: displayValue } });
             }}
           />
           <FontAwesomeIcon
@@ -187,7 +188,7 @@ const CellContent: React.FC<CellContentProps> = ({
             title="View only this label"
             onClick={(e) => {
               e.stopPropagation();
-              userDispatch({type:"FILTER_ONLY", payload:{key:columnName, operation:'=', value:displayValue}})
+              userDispatch({ type: 'FILTER_ONLY', payload: { key: columnName, operation: '=', value: displayValue } });
             }}
           />
         </div>
@@ -211,7 +212,7 @@ const CellContent: React.FC<CellContentProps> = ({
           title="Add label to filter"
           onClick={(e) => {
             e.stopPropagation();
-            userDispatch({type:"FILTER_ADD", payload:{key:columnName, operation:'=', value:displayValue}})
+            userDispatch({ type: 'FILTER_ADD', payload: { key: columnName, operation: '=', value: displayValue } });
           }}
         />
         <FontAwesomeIcon
@@ -221,7 +222,7 @@ const CellContent: React.FC<CellContentProps> = ({
           title="Remove label from filter"
           onClick={(e) => {
             e.stopPropagation();
-            userDispatch({type:"FILTER_ADD", payload:{key:columnName, operation:'!=', value:displayValue}})
+            userDispatch({ type: 'FILTER_ADD', payload: { key: columnName, operation: '!=', value: displayValue } });
           }}
         />
         <FontAwesomeIcon
@@ -231,7 +232,7 @@ const CellContent: React.FC<CellContentProps> = ({
           title="View only this label"
           onClick={(e) => {
             e.stopPropagation();
-            userDispatch({type:"FILTER_ONLY", payload:{key:columnName, operation:'=', value:displayValue}})
+            userDispatch({ type: 'FILTER_ONLY', payload: { key: columnName, operation: '=', value: displayValue } });
           }}
         />
       </div>
@@ -253,9 +254,9 @@ export const Table: React.FC<TableProps> = ({
   const [sortField, setSortField] = useState<string>('timestamp');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
-  let rowCount = 0
+  let rowCount = 0;
   if (fields.length > 0) {
-  rowCount = fields[0].values.length;
+    rowCount = fields[0].values.length;
   }
   // const rowCount = fields[0].values.length;
 
@@ -263,11 +264,18 @@ export const Table: React.FC<TableProps> = ({
   const [columnWidths, setColumnWidths] = useState<{ [key: string]: string }>(() => {
     const widths: { [key: string]: string } = {};
     keys.forEach((key) => {
-      if (key === 'timestamp') { widths[key] = '180px';}
-      else if (key === 'level') { widths[key] = '10px';}
-      else if (key === 'traceID') { widths[key] = '200px';}
-      else if (key === 'body') { widths[key] = 'minmax(300px, 1fr)';} // fills remaining space
-      else { widths[key] = '150px';}
+      if (key === 'timestamp') {
+        widths[key] = '180px';
+      } else if (key === 'level') {
+        widths[key] = '10px';
+      } else if (key === 'traceID') {
+        widths[key] = '200px';
+      } else if (key === 'body') {
+        widths[key] = 'minmax(300px, 1fr)';
+      } // fills remaining space
+      else {
+        widths[key] = '150px';
+      }
     });
     return widths;
   });
@@ -279,11 +287,17 @@ export const Table: React.FC<TableProps> = ({
       keys.forEach((key) => {
         if (!(key in newWidths)) {
           // default width logic
-          if (key === 'timestamp') { newWidths[key] = '180px';}
-          else if (key === 'level') { newWidths[key] = '10px';}
-          else if (key === 'traceID') { newWidths[key] = '200px';}
-          else if (key === 'body') { newWidths[key] = 'minmax(300px, 1fr)';}
-          else { newWidths[key] = '150px';}
+          if (key === 'timestamp') {
+            newWidths[key] = '180px';
+          } else if (key === 'level') {
+            newWidths[key] = '10px';
+          } else if (key === 'traceID') {
+            newWidths[key] = '200px';
+          } else if (key === 'body') {
+            newWidths[key] = 'minmax(300px, 1fr)';
+          } else {
+            newWidths[key] = '150px';
+          }
         }
       });
 
@@ -298,7 +312,7 @@ export const Table: React.FC<TableProps> = ({
     // get starting width in px
     const startWidth =
       columnWidths[key].endsWith('fr') || columnWidths[key].startsWith('minmax')
-        ? (e.currentTarget.parentElement?.getBoundingClientRect().width || 300)
+        ? e.currentTarget.parentElement?.getBoundingClientRect().width || 300
         : parseInt(columnWidths[key]);
 
     const onMouseMove = (moveEvent: MouseEvent) => {
@@ -392,10 +406,12 @@ export const Table: React.FC<TableProps> = ({
           paddingRight: '0.75rem',
         }}
         role="button"
-        onClick={() => setLogDetails(rowIndex)}
+        onClick={() => setLogDetails(genLogDetailsSelection(rowData, keys))}
         className={clsx(
           'cursor-pointer border-b-1 text-sm',
-          theme.isDark ? 'border-b-neutral-200/20 hover:bg-neutral-600 bg-neutral-800' : 'border-b-neutral-200 hover:bg-neutral-50'
+          theme.isDark
+            ? 'border-b-neutral-200/20 hover:bg-neutral-600 bg-neutral-800'
+            : 'border-b-neutral-200 hover:bg-neutral-50'
         )}
       >
         {rowData.map((value, idx) => {
@@ -492,3 +508,24 @@ export const Table: React.FC<TableProps> = ({
     </div>
   );
 };
+
+function genLogDetailsSelection(rowData: any[], keys: string[]): LogDetailsSelection {
+  let timestamp = '';
+  let app = '';
+  let service = '';
+  let body = '';
+  rowData.forEach((value, idx) => {
+    const key = keys[idx];
+
+    if (key === 'timestamp') {
+      timestamp = value;
+    } else if (key === 'app') {
+      app = value;
+    } else if (key === 'service') {
+      service = value;
+    } else if (key === 'body') {
+      body = value;
+    }
+  });
+  return { timestamp: timestamp, app: app, service: service, body: body };
+}

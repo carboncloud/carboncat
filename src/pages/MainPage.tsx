@@ -31,6 +31,7 @@ import { Settings } from 'components/Settings';
 import { NotificationView } from 'components/NotificationView';
 import { SaveView } from 'components/SaveView';
 import { ReleaseMessage } from 'components/ReleaseMessage';
+import { LogDetailsSelection } from 'types/types.js';
 
 function PageOne() {
   const theme = useTheme2();
@@ -66,15 +67,20 @@ function PageOne() {
     userDispatch({ type: 'SET_TIMERANGE', payload: value });
   };
 
-  const handleSetLogDetails = (row: number | undefined) => {
-    if (userState.logDetails === row) {
+  const handleSetLogDetails = (ld: LogDetailsSelection | undefined) => {
+    if (
+      userState.selectedRow?.timestamp === ld?.timestamp &&
+      userState.selectedRow?.app === ld?.app &&
+      userState.selectedRow?.service === ld?.service &&
+      userState.selectedRow?.body === ld?.body
+    ) {
       userDispatch({ type: 'CLOSE_LOG_DETAILS' });
       return;
-    } else if (row === undefined) {
+    } else if (ld === undefined) {
       userDispatch({ type: 'CLOSE_LOG_DETAILS' });
       return;
     }
-    userDispatch({ type: 'SET_LOG_DETAILS', payload: row });
+    userDispatch({ type: 'SET_LOG_DETAILS', payload: ld });
   };
 
   const fieldsList = getFieldNames(keys, userState.selectedFields, userState.selectedLabels);
@@ -194,12 +200,7 @@ function PageOne() {
               <div className="w-12 h-12 rounded-full border-4 animate-spin border-[#28A0A6] border-t-transparent"></div>
             </div>
           )}
-          <LogDetails
-            options={options}
-            fields={appState.logFields}
-            rowIndex={userState.logDetails}
-            setLogDetails={handleSetLogDetails}
-          />
+          <LogDetails options={options} fields={appState.detailedField} setLogDetails={handleSetLogDetails} />
         </div>
       </div>
     </div>

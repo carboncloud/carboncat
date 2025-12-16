@@ -7,7 +7,7 @@ import { parseTimeRangeRaw } from 'utils/functions';
 import { GenerateURLParams } from 'utils/url';
 import { DATASOURCES } from 'utils/variables';
 import { useSettings } from './SettingsContext';
-import { Notification } from 'types/types';
+import { LogDetailsSelection, Notification } from 'types/types';
 
 export interface UserState {
   mode: Mode;
@@ -20,7 +20,7 @@ export interface UserState {
   datasource: string;
   logLevels: string[];
   refreshInterval: string;
-  logDetails: number | null;
+  selectedRow: LogDetailsSelection | null;
   selectedFields: string[];
   selectedLabels: string[];
   streamingMode: boolean;
@@ -37,7 +37,7 @@ const initialUserState: UserState = {
   datasource: DATASOURCES[0].value,
   logLevels: ['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'],
   refreshInterval: '',
-  logDetails: null,
+  selectedRow: null,
   selectedFields: ['level', 'timestamp', 'traceID', 'spanID', 'body'],
   selectedLabels: ['labels.app', 'labels.component', 'labels.team'],
   streamingMode: false,
@@ -49,6 +49,7 @@ interface AppState {
   logFields: Field[];
   levelFields: Field[];
   labels: string[];
+  detailedField: Field[] | null;
   error: string | null;
   settingsOpen: boolean;
   saveViewOpen: boolean;
@@ -63,6 +64,7 @@ const initialAppState: AppState = {
   logFields: [],
   levelFields: [],
   labels: [],
+  detailedField: null,
   error: '',
   settingsOpen: false,
   saveViewOpen: false,
@@ -83,7 +85,7 @@ type UserAction =
   | { type: 'SET_DATASOURCE'; payload: string }
   | { type: 'SET_LOGLEVELS'; payload: string[] }
   | { type: 'SET_REFRESH_INTERVAL'; payload: string }
-  | { type: 'SET_LOG_DETAILS'; payload: number }
+  | { type: 'SET_LOG_DETAILS'; payload: LogDetailsSelection }
   | { type: 'CLOSE_LOG_DETAILS' }
   | { type: 'TOGGLE_LABEL'; payload: string }
   | { type: 'TOGGLE_FIELD'; payload: string }
@@ -97,6 +99,7 @@ type AppAction =
   | { type: 'SET_LOG_FIELDS'; payload: Field[] }
   | { type: 'SET_LEVEL_FIELDS'; payload: Field[] }
   | { type: 'SET_LABELS'; payload: string[] }
+  | { type: 'SET_DETAILED_FIELD'; payload: Field[] }
   | { type: 'LOADING' }
   | { type: 'NOT_LOADING' }
   | { type: 'SET_ERROR'; payload: string }
@@ -143,9 +146,9 @@ function userReducer(state: UserState, action: UserAction): UserState {
     case 'SET_REFRESH_INTERVAL':
       return { ...state, refreshInterval: action.payload };
     case 'SET_LOG_DETAILS':
-      return { ...state, logDetails: action.payload };
+      return { ...state, selectedRow: action.payload };
     case 'CLOSE_LOG_DETAILS':
-      return { ...state, logDetails: null };
+      return { ...state, selectedRow: null };
     case 'TOGGLE_LABEL':
       return {
         ...state,
@@ -179,6 +182,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, levelFields: action.payload };
     case 'SET_LABELS':
       return { ...state, labels: action.payload };
+    case 'SET_DETAILED_FIELD':
+      return { ...state, detailedField: action.payload };
     case 'LOADING':
       return { ...state, isLoading: true };
     case 'NOT_LOADING':
@@ -311,8 +316,8 @@ const userStateFromQueryParams = (u: URLSearchParams, persistantUserState: boole
   if (u.get('refresh')) {
     us.refreshInterval = u.get('refresh') as string;
   }
-  if (u.get('logDetails')) {
-    us.logDetails = JSON.parse(u.get('logDetails') as string);
+  if (u.get('selectedRow')) {
+    us.selectedRow = JSON.parse(u.get('selectedRow') as string);
   }
   if (u.get('fields')) {
     us.selectedFields = JSON.parse(atob(u.get('fields') as string));

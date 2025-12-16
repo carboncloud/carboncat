@@ -5,7 +5,6 @@ import { lastValueFrom, isObservable, Observable } from 'rxjs';
 import { generateFilterString, generateHLFilterString } from './functions';
 import { Filter } from 'types/filters';
 
-// const keysToRemoveFromDistinct = ["spanID", "traceID", "body"];
 const tableName = 'otel_logs_cc';
 
 const keyMap: Record<string, string> = {
@@ -38,12 +37,12 @@ export function generateLogQuery(searchTerm: string, labels: string[], filters: 
     ComponentName as "service",
     TraceId as "traceID",
     SpanId as "spanID"
+
   FROM ${tableName}
   WHERE
     ( timestamp >= $__fromTime AND timestamp <= $__toTime )
     AND (body ILIKE '%${searchTerm}%')
     AND level IN ('DEBUG','INFO','WARN','ERROR','FATAL')
-    AND ('' = '' OR traceID = '')
     ${generateHLFilterString('level', logLevels)}
     ${generateFilterString(filters)}
   ORDER BY timestamp DESC LIMIT 20000`;
@@ -51,32 +50,66 @@ export function generateLogQuery(searchTerm: string, labels: string[], filters: 
   return rawSql;
 }
 
-export function generateLogQueryOld(searchTerm: string, filters: Filter[], logLevels: string[]): string {
-  const rawSql = `SELECT
+export async function getLogDetails(
+  timestamp: string,
+  app: string,
+  service: string,
+  body: string,
+  dsName: string,
+  timeRange: TimeRange,
+  setData: (data: Field[]) => void
+): Promise<void> {
+  const rawSql = `
+  SELECT
     Timestamp as "timestamp",
     Body as "body",
     SeverityText as "level",
     LogAttributes as "labels",
+    AppName as "app",
+    ComponentName as "service",
     TraceId as "traceID",
     SpanId as "spanID"
   FROM ${tableName}
   WHERE
-    ( timestamp >= $__fromTime AND timestamp <= $__toTime )
-    AND (body ILIKE '%${searchTerm}%')
-    AND level IN ('DEBUG','INFO','WARN','ERROR','FATAL')
-    AND ('' = '' OR traceID = '')
-    ${generateHLFilterString('level', logLevels)}
-    ${generateFilterString(filters)}
-  ORDER BY timestamp DESC LIMIT 20000`;
+    toUnixTimestamp64Milli(timestamp) = ${timestamp}
+    AND app = '${app}' 
+    AND service = '${service}'
+    AND body = '${body}'
+  LIMIT 1`;
 
-  return rawSql;
+  const fields = await runQuery(rawSql, dsName, timeRange);
+  setData(fields);
 }
 
-export async function getLabels(dsName: string, timeRange: TimeRange, setData: (data: Field[]) => void): Promise<void> {
+export async function getLabels(
+  dsName: string,
+  timeRange: TimeRange,
+  filters: Filter[],
+  logLevels: string[],
+  setData: (data: Field[]) => void
+): Promise<void> {
   const rawSql = `
-    SELECT DISTINCT arrayJoin(mapKeys(LogAttributes)) AS key
-    FROM otel_logs
-    WHERE $__timeFilter(Timestamp);
+    SELECT DISTINCT
+        arrayJoin(mapKeys(LogAttributes)) AS key
+    FROM
+    (
+      SELECT
+        Timestamp as "timestamp",
+        Body as "body",
+        SeverityText as "level",
+        LogAttributes,
+        AppName as "app",
+        ComponentName as "service",
+        TraceId as "traceID",
+        SpanId as "spanID"
+      FROM ${tableName}
+        WHERE $__timeFilter(Timestamp)
+        AND SeverityText IN ('DEBUG','INFO','WARN','ERROR','FATAL')
+    )
+    WHERE
+      ${generateHLFilterString('level', logLevels, false)}
+      ${generateFilterString(filters)}
+;
 `;
 
   const fields = await runQuery(rawSql, dsName, timeRange);

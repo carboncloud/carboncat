@@ -1,7 +1,8 @@
 import { getTemplateSrv } from '@grafana/runtime';
-import { DateTime, isDateTime, VariableOption } from '@grafana/data';
+import { DateTime, Field, isDateTime, VariableOption } from '@grafana/data';
 import dayjs from 'dayjs';
 import { Filter, FilterOperation } from 'types/filters';
+import { LogDetailsSelection } from 'types/types';
 
 export function prettifyHeaderNames(name: string, displayLevel: boolean) {
   if (name.startsWith('labels.')) {
@@ -185,4 +186,26 @@ export function parseTimeRangeRaw(t: string | DateTime): string {
   } else {
     return t;
   }
+}
+
+export function genLogDetailsSelection(colData: Field[], rowIdx: number): LogDetailsSelection {
+  let timestamp = '';
+  let app = '';
+  let service = '';
+  let body = '';
+  colData.forEach((f: Field) => {
+    const key = f.name;
+    const value = f.values[rowIdx];
+
+    if (key === 'timestamp') {
+      timestamp = value;
+    } else if (key === 'app') {
+      app = value;
+    } else if (key === 'service') {
+      service = value;
+    } else if (key === 'body') {
+      body = value;
+    }
+  });
+  return { timestamp: timestamp, app: app, service: service, body: body };
 }

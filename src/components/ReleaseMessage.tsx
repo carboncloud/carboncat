@@ -42,7 +42,7 @@ export const ReleaseMessage: React.FC<ReleaseMessageProps> = () => {
         >
           <div
             className={clsx(
-              'flex flex-col p-4 w-1/3 min-h-1/3 rounded-lg shadow-2xl border-1 justify-between',
+              'flex flex-col p-4 w-1/3 min-h-1/3 max-h-2/3 overflow-y-scroll rounded-lg shadow-2xl border-1 justify-between',
               theme.isDark ? 'bg-neutral-800 border-neutral-600' : 'bg-white border-neutral-300'
             )}
           >

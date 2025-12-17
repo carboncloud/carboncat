@@ -48,4 +48,32 @@ export const Releases: Record<string, ReleaseInfo> = {
       </>
     ),
   },
+  '0.0.12': {
+    notes: (
+      <>
+        Yet another version. This one includes mostly bugfixes.
+        <br />
+        <br />
+        <b>Features</b>
+        <br />
+        - User can now set query limit in settings.
+        <br />
+        - Added Team as a field.
+        <br />
+        <br />
+        <b>Bugfixes</b>
+        <br />
+        - Log details works even if app and component cols are not shown.
+        <br />
+        - Release messages now scroll instead of beeing bigger than the screen.
+        <br />
+        - User should not have to clear local storage on updates now.
+        <br />
+        <br />
+        🎄 Merry Chrysler 🎄
+        <br />
+        Scaffolders
+      </>
+    ),
+  },
 };

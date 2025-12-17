@@ -285,7 +285,12 @@ export function useSharedState(): StateContextType {
 
 function getUserState(): UserState {
   const savedState = localStorage.getItem('carboncat.userState');
-  return savedState ? JSON.parse(savedState) : initialUserState;
+  try {
+    return savedState ? JSON.parse(savedState) : initialUserState;
+  } catch (error) {
+    console.error('could not parse userState, using initial state: ' + error);
+  }
+  return initialUserState;
 }
 
 const userStateFromQueryParams = (u: URLSearchParams, persistantUserState: boolean): UserState => {
@@ -301,7 +306,7 @@ const userStateFromQueryParams = (u: URLSearchParams, persistantUserState: boole
     us.mode = u.get('mode') as Mode;
   }
   if (u.get('filters')) {
-    us.filters = JSON.parse(atob(u.get('filters') as string));
+    us.filters = JSONparseDefault(atob(u.get('filters') as string), us.filters);
   }
   if (u.get('from') && u.get('to')) {
     us.timeFrom = u.get('from') as string;
@@ -311,19 +316,19 @@ const userStateFromQueryParams = (u: URLSearchParams, persistantUserState: boole
     us.datasource = u.get('ds') as string;
   }
   if (u.get('logLevels')) {
-    us.logLevels = JSON.parse(atob(u.get('logLevels') as string));
+    us.logLevels = JSONparseDefault(atob(u.get('logLevels') as string), us.logLevels);
   }
   if (u.get('refresh')) {
     us.refreshInterval = u.get('refresh') as string;
   }
   if (u.get('selectedRow')) {
-    us.selectedRow = JSON.parse(u.get('selectedRow') as string);
+    us.selectedRow = JSONparseDefault(u.get('selectedRow') as string, us.selectedRow);
   }
   if (u.get('fields')) {
-    us.selectedFields = JSON.parse(atob(u.get('fields') as string));
+    us.selectedFields = JSONparseDefault(atob(u.get('fields') as string), us.selectedFields);
   }
   if (u.get('labels')) {
-    us.selectedLabels = JSON.parse(atob(u.get('labels') as string));
+    us.selectedLabels = JSONparseDefault(atob(u.get('labels') as string), us.selectedLabels);
   }
 
   // Special flags
@@ -335,6 +340,15 @@ const userStateFromQueryParams = (u: URLSearchParams, persistantUserState: boole
   }
 
   return us;
+};
+
+const JSONparseDefault = (v: string, d: any): any => {
+  try {
+    return JSON.parse(v);
+  } catch (error) {
+    console.error('could not parse json, using default value: ' + error);
+  }
+  return d;
 };
 
 const handleFilterChange = (prevFilters: Filter[], filter: Filter, op: 'add' | 'rm' | 'only'): Filter[] => {

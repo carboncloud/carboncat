@@ -13,7 +13,13 @@ const keyMap: Record<string, string> = {
   body: 'Body',
 };
 
-export function generateLogQuery(searchTerm: string, labels: string[], filters: Filter[], logLevels: string[]): string {
+export function generateLogQuery(
+  searchTerm: string,
+  labels: string[],
+  filters: Filter[],
+  logLevels: string[],
+  limit: number
+): string {
   const logAttrs = labels.map(
     (l: string) => `'${l.replaceAll('labels.', '')}', LogAttributes['${l.replaceAll('labels.', '')}']`
   );
@@ -35,6 +41,7 @@ export function generateLogQuery(searchTerm: string, labels: string[], filters: 
     ${lMap}
     AppName as "app",
     ComponentName as "service",
+    Team as "team",
     TraceId as "traceID",
     SpanId as "spanID"
 
@@ -45,7 +52,7 @@ export function generateLogQuery(searchTerm: string, labels: string[], filters: 
     AND level IN ('DEBUG','INFO','WARN','ERROR','FATAL')
     ${generateHLFilterString('level', logLevels)}
     ${generateFilterString(filters)}
-  ORDER BY timestamp DESC LIMIT 20000`;
+  ORDER BY timestamp DESC LIMIT ${limit}`;
 
   return rawSql;
 }
@@ -67,6 +74,7 @@ export async function getLogDetails(
     LogAttributes as "labels",
     AppName as "app",
     ComponentName as "service",
+    Team as "team",
     TraceId as "traceID",
     SpanId as "spanID"
   FROM ${tableName}
@@ -100,6 +108,7 @@ export async function getLabels(
         LogAttributes,
         AppName as "app",
         ComponentName as "service",
+        Team as "team",
         TraceId as "traceID",
         SpanId as "spanID"
       FROM ${tableName}

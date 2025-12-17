@@ -10,7 +10,6 @@ import clsx from 'clsx';
 import { SimpleOptions } from 'types/filters';
 import { prettifyHeaderNames } from 'utils/functions';
 import { useSharedState } from './StateContext';
-import { LogDetailsSelection } from 'types/types';
 
 export interface TableProps {
   options: SimpleOptions;
@@ -18,7 +17,7 @@ export interface TableProps {
   keys: string[];
   lineHeight: number;
   searchTerm: string;
-  setLogDetails: (ld: LogDetailsSelection | undefined) => void;
+  setLogDetails: (idx: number | undefined) => void;
 }
 
 interface CellContentProps {
@@ -406,7 +405,7 @@ export const Table: React.FC<TableProps> = ({
           paddingRight: '0.75rem',
         }}
         role="button"
-        onClick={() => setLogDetails(genLogDetailsSelection(rowData, keys))}
+        onClick={() => setLogDetails(rowIndex)}
         className={clsx(
           'cursor-pointer border-b-1 text-sm',
           theme.isDark
@@ -508,24 +507,3 @@ export const Table: React.FC<TableProps> = ({
     </div>
   );
 };
-
-function genLogDetailsSelection(rowData: any[], keys: string[]): LogDetailsSelection {
-  let timestamp = '';
-  let app = '';
-  let service = '';
-  let body = '';
-  rowData.forEach((value, idx) => {
-    const key = keys[idx];
-
-    if (key === 'timestamp') {
-      timestamp = value;
-    } else if (key === 'app') {
-      app = value;
-    } else if (key === 'service') {
-      service = value;
-    } else if (key === 'body') {
-      body = value;
-    }
-  });
-  return { timestamp: timestamp, app: app, service: service, body: body };
-}

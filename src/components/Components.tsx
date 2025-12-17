@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {  faPlusCircle, faMinusCircle } from '@fortawesome/free-solid-svg-icons';
+import { faPlusCircle, faMinusCircle } from '@fortawesome/free-solid-svg-icons';
 import clsx from 'clsx';
 import { prettifyHeaderNames } from 'utils/functions';
 import { ButtonOption, ToggleOption } from 'types/components';
@@ -32,36 +32,46 @@ export interface NumberInputProps {
   onChange: (value: number) => void;
 }
 
-export const NumberInput: React.FC<NumberInputProps> = ({ name, value, maxValue, minValue, step, hidden, onChange }) => {
+export const NumberInput: React.FC<NumberInputProps> = ({
+  name,
+  value,
+  maxValue,
+  minValue,
+  step,
+  hidden,
+  onChange,
+}) => {
   const handleValueChange = (op: string) => {
     let v = value;
-    if (op === "+") {
-      v = v+step
+    if (op === '+') {
+      v = v + step;
     } else {
-      v = v-step
+      v = v - step;
     }
 
     if (v < minValue || v > maxValue) {
-      return
+      return;
     }
 
-    onChange(v)
+    onChange(v);
   };
 
   return (
     <div className={`w-full flex gap-2 justify-between ${hidden && `hidden`}`}>
       <span>{name}</span>
-    <div className={`flex gap-2 items-center`}>
+      <div className={`flex gap-2 items-center`}>
         <span>{value}</span>
-        <div className={clsx(
-          `text-neutral-300 flex gap-1 items-center`
-           )}>
-          <FontAwesomeIcon icon={faMinusCircle} className={clsx(
-            `hover:text-neutral-500`
-           )} onClick={() => handleValueChange("-")}/>
-          <FontAwesomeIcon icon={faPlusCircle} className={clsx(
-            `hover:text-neutral-500`
-           )} onClick={() => handleValueChange("+")} />
+        <div className={clsx(`text-neutral-300 flex gap-1 items-center`)}>
+          <FontAwesomeIcon
+            icon={faMinusCircle}
+            className={clsx(`hover:text-neutral-500`)}
+            onClick={() => handleValueChange('-')}
+          />
+          <FontAwesomeIcon
+            icon={faPlusCircle}
+            className={clsx(`hover:text-neutral-500`)}
+            onClick={() => handleValueChange('+')}
+          />
         </div>
       </div>
     </div>
@@ -74,54 +84,53 @@ interface ToggleButtonGroupProps {
   onChange?: (value: string) => void;
 }
 
-export function ToggleButtonGroup({
-  options,
-  defaultValue,
-  onChange,
-}: ToggleButtonGroupProps) {
+export function ToggleButtonGroup({ options, defaultValue, onChange }: ToggleButtonGroupProps) {
   const [selected, setSelected] = useState(defaultValue || options[0].value);
 
   const handleClick = (value: string, disabled?: boolean) => {
-    if (disabled) { return };
+    if (disabled) {
+      return;
+    }
     setSelected(value);
     onChange?.(value);
   };
 
   const theme = useTheme2();
 
-return (
-  <div
-    className={clsx(
-    "inline-flex mx-4 rounded-lg border ",
-    theme.isDark ? 'border-neutral-200/20' : 'border-neutral-200'
-    )}
-  >
-     {options.map((option, idx) => (
+  return (
+    <div
+      className={clsx(
+        'inline-flex mx-4 rounded-lg border ',
+        theme.isDark ? 'border-neutral-200/20' : 'border-neutral-200'
+      )}
+    >
+      {options.map((option, idx) => (
         <div
           key={option.value}
           title={option.label}
           onClick={() => handleClick(option.value, option.disabled)}
           role="button"
           className={[
-            "flex items-center justify-center px-3 py-2 text-sm transition-colors",
-            theme.isDark ? "hover:bg-neutral-500" : "hover:bg-neutral-100",
-            idx === 0 ? "rounded-l-lg" : "",
-            idx === options.length - 1 ? "rounded-r-lg" : "",
-            option.disabled ? "opacity-50 cursor-not-allowed" : "",
+            'flex items-center justify-center px-3 py-2 text-sm transition-colors',
+            theme.isDark ? 'hover:bg-neutral-500' : 'hover:bg-neutral-100',
+            idx === 0 ? 'rounded-l-lg' : '',
+            idx === options.length - 1 ? 'rounded-r-lg' : '',
+            option.disabled ? 'opacity-50 cursor-not-allowed' : '',
             selected === option.value
-              ? theme.isDark ? 'bg-neutral-200/20' : 'bg-gray-200 text-gray-900'
-              : theme.isDark ? 'bg-neutral-800/20' : "bg-white text-gray-600",
-          ].join(" ")}
+              ? theme.isDark
+                ? 'bg-neutral-200/20'
+                : 'bg-gray-200 text-gray-900'
+              : theme.isDark
+              ? 'bg-neutral-800/20'
+              : 'bg-white text-gray-600',
+          ].join(' ')}
         >
-          {option.icon && (
-            <FontAwesomeIcon icon={option.icon} className="w-4 h-4" />
-          )}
+          {option.icon && <FontAwesomeIcon icon={option.icon} className="w-4 h-4" />}
         </div>
       ))}
     </div>
   );
 }
-
 
 interface ButtonProps {
   options: ButtonOption;
@@ -129,41 +138,33 @@ interface ButtonProps {
   onClick?: () => void;
 }
 
-export function Button({
-  options,
-  className,
-  onClick,
-}: ButtonProps) {
-
+export function Button({ options, className, onClick }: ButtonProps) {
   const theme = useTheme2();
 
   return (
     <div
       className={clsx(
-      "inline-flex rounded-lg border ",
-      theme.isDark ? 'border-neutral-200/20' : 'border-neutral-200',
-      className
+        'inline-flex rounded-lg border ',
+        theme.isDark ? 'border-neutral-200/20' : 'border-neutral-200',
+        className
       )}
     >
       <div
         title={options.label}
-        onClick={options.disabled ? () =>{} : onClick}
+        onClick={options.disabled ? () => {} : onClick}
         role="button"
         className={[
-          "flex items-center justify-center px-3 py-2 text-sm transition-colors rounded-lg",
-          theme.isDark ? "hover:bg-neutral-500" : "hover:bg-neutral-100",
-          options.disabled ? "opacity-50 cursor-not-allowed" : "",
-          theme.isDark ? 'bg-neutral-800/20' : "bg-white text-gray-600",
-        ].join(" ")}
+          'flex items-center justify-center px-3 py-2 text-sm transition-colors rounded-lg',
+          theme.isDark ? 'hover:bg-neutral-500' : 'hover:bg-neutral-100',
+          options.disabled ? 'opacity-50 cursor-not-allowed' : '',
+          theme.isDark ? 'bg-neutral-800/20' : 'bg-white text-gray-600',
+        ].join(' ')}
       >
-        {options.icon && (
-          <FontAwesomeIcon icon={options.icon} className="w-4 h-4" />
-        )}
+        {options.icon && <FontAwesomeIcon icon={options.icon} className="w-4 h-4" />}
       </div>
     </div>
   );
 }
-
 
 export interface SettingsCheckboxProps {
   label: string;
@@ -176,6 +177,55 @@ export const SettingsCheckbox: React.FC<SettingsCheckboxProps> = ({ label, isChe
     <div className={`w-full flex gap-2 justify-between`}>
       <label key={label}>{label}</label>
       <input type="checkbox" value={label} checked={isChecked} onChange={() => onChange()} />
+    </div>
+  );
+};
+
+export interface SettingsNumberInputProps {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+}
+
+export const SettingsNumberInput: React.FC<SettingsNumberInputProps> = ({ label, value, onChange }) => {
+  const [localValue, setLocalValue] = useState<number>(value);
+  const timeoutRef = useRef<number | null>(null);
+
+  // Sync when parent value changes
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const nextValue = Number(e.target.value);
+    if (Number.isNaN(nextValue)) {
+      return;
+    }
+
+    setLocalValue(nextValue);
+
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = window.setTimeout(() => {
+      onChange(nextValue);
+    }, 800);
+  };
+
+  return (
+    <div className="flex gap-2 justify-between items-center w-full">
+      <label htmlFor={label}>{label}</label>
+      <input
+        id={label}
+        type="number"
+        value={localValue}
+        onChange={handleChange}
+        className="w-30 px-2 text-right !border-1 !rounded-sm"
+      />
     </div>
   );
 };

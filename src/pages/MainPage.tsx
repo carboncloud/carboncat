@@ -3,7 +3,7 @@ import { rangeUtil, TimeRange } from '@grafana/data';
 import { RefreshPicker, TimeRangePicker, useTheme2 } from '@grafana/ui';
 import '../style.js';
 import { SimpleOptions } from 'types/filters';
-import { getFieldNames } from 'utils/functions';
+import { genLogDetailsSelection, getFieldNames } from 'utils/functions';
 import clsx from 'clsx';
 import { Table } from 'components/Table';
 import { LogDetails } from 'components/LogDetails';
@@ -31,12 +31,11 @@ import { Settings } from 'components/Settings';
 import { NotificationView } from 'components/NotificationView';
 import { SaveView } from 'components/SaveView';
 import { ReleaseMessage } from 'components/ReleaseMessage';
-import { LogDetailsSelection } from 'types/types.js';
 
 function PageOne() {
   const theme = useTheme2();
 
-  const keys = ['level', 'timestamp', 'traceID', 'spanID', 'app', 'service', 'body'];
+  const keys = ['level', 'timestamp', 'traceID', 'spanID', 'app', 'service', 'team', 'body'];
 
   const [chartWidth, setChartWidth] = useState<number>(200);
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -67,7 +66,13 @@ function PageOne() {
     userDispatch({ type: 'SET_TIMERANGE', payload: value });
   };
 
-  const handleSetLogDetails = (ld: LogDetailsSelection | undefined) => {
+  const handleSetLogDetails = (row: number | undefined) => {
+    if (row === undefined) {
+      userDispatch({ type: 'CLOSE_LOG_DETAILS' });
+      return;
+    }
+
+    const ld = genLogDetailsSelection(appState.logFields, row);
     if (
       userState.selectedRow?.timestamp === ld?.timestamp &&
       userState.selectedRow?.app === ld?.app &&

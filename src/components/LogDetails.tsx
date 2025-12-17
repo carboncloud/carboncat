@@ -12,12 +12,11 @@ import { SimpleOptions } from 'types/filters';
 import { stringToDarkColor, timeAgo } from 'utils/functions';
 import { useSharedState } from './StateContext';
 import { AnimatePresence, motion } from 'framer-motion';
-import { LogDetailsSelection } from 'types/types';
 
 export interface LogDetailsProps {
   options: SimpleOptions;
   fields: Field[] | null;
-  setLogDetails: (ld: LogDetailsSelection | undefined) => void;
+  setLogDetails: (ld: number | undefined) => void;
 }
 
 export const LogDetails: React.FC<LogDetailsProps> = ({ options, fields, setLogDetails }) => {

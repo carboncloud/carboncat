@@ -13,7 +13,13 @@ const keyMap: Record<string, string> = {
   body: 'Body',
 };
 
-export function generateLogQuery(searchTerm: string, labels: string[], filters: Filter[], logLevels: string[]): string {
+export function generateLogQuery(
+  searchTerm: string,
+  labels: string[],
+  filters: Filter[],
+  logLevels: string[],
+  limit: number
+): string {
   const logAttrs = labels.map(
     (l: string) => `'${l.replaceAll('labels.', '')}', LogAttributes['${l.replaceAll('labels.', '')}']`
   );
@@ -45,7 +51,7 @@ export function generateLogQuery(searchTerm: string, labels: string[], filters: 
     AND level IN ('DEBUG','INFO','WARN','ERROR','FATAL')
     ${generateHLFilterString('level', logLevels)}
     ${generateFilterString(filters)}
-  ORDER BY timestamp DESC LIMIT 20000`;
+  ORDER BY timestamp DESC LIMIT ${limit}`;
 
   return rawSql;
 }

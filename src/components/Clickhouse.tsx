@@ -10,9 +10,11 @@ import {
 } from 'utils/clickhouse';
 import { Field, rangeUtil } from '@grafana/data';
 import { Subscription } from 'rxjs';
+import { useSettings } from './SettingsContext';
 
 export function useClickHouse() {
   const { userState, appState, appDispatch } = useSharedState();
+  const { settingsState } = useSettings();
 
   const lastRequestRef = useRef<string | null>(null);
   const streamingSubscriptionRef = useRef<Subscription | null>(null);
@@ -54,7 +56,13 @@ export function useClickHouse() {
       const sqlExpr =
         userState.mode === 'sql'
           ? (userState.sqlExpression as string)
-          : generateLogQuery(userState.searchTerm, userState.selectedLabels, userState.filters, userState.logLevels);
+          : generateLogQuery(
+              userState.searchTerm,
+              userState.selectedLabels,
+              userState.filters,
+              userState.logLevels,
+              settingsState.maxNumberOfLines
+            );
 
       appDispatch({ type: 'SET_SQL', payload: sqlExpr });
     },
@@ -66,6 +74,7 @@ export function useClickHouse() {
       userState.selectedLabels,
       userState.filters,
       userState.logLevels,
+      settingsState.maxNumberOfLines,
     ]
   );
 

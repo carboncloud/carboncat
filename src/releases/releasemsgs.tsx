@@ -58,6 +58,8 @@ export const Releases: Record<string, ReleaseInfo> = {
         <br />
         - User can now set query limit in settings.
         <br />
+        - Added Team as a field.
+        <br />
         <br />
         <b>Bugfixes</b>
         <br />

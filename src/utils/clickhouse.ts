@@ -41,6 +41,7 @@ export function generateLogQuery(
     ${lMap}
     AppName as "app",
     ComponentName as "service",
+    Team as "team",
     TraceId as "traceID",
     SpanId as "spanID"
 
@@ -73,6 +74,7 @@ export async function getLogDetails(
     LogAttributes as "labels",
     AppName as "app",
     ComponentName as "service",
+    Team as "team",
     TraceId as "traceID",
     SpanId as "spanID"
   FROM ${tableName}
@@ -106,6 +108,7 @@ export async function getLabels(
         LogAttributes,
         AppName as "app",
         ComponentName as "service",
+        Team as "team",
         TraceId as "traceID",
         SpanId as "spanID"
       FROM ${tableName}

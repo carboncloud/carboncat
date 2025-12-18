@@ -52,7 +52,7 @@ export function generateLogQuery(
     AND level IN ('DEBUG','INFO','WARN','ERROR','FATAL')
     ${generateHLFilterString('level', logLevels)}
     ${generateFilterString(filters)}
-  ORDER BY timestamp DESC LIMIT ${limit}`;
+  ORDER BY timestamp DESC LIMIT ${limit ? limit : 20000}`;
 
   return rawSql;
 }

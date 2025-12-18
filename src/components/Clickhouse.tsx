@@ -120,11 +120,6 @@ export function useClickHouse() {
 
     refreshLabels();
 
-    if (userState.streamingMode) {
-      refreshSqlDataStreaming();
-      return;
-    }
-
     appDispatch({ type: 'LOADING' });
     Promise.all([
       runLogQuery(
@@ -240,7 +235,7 @@ export function useClickHouse() {
     }, intervalMs);
 
     return () => clearInterval(timer);
-  }, [userState.refreshInterval, userState.timeFrom, userState.timeTo, appState.sqlExpression]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userState.refreshInterval, userState.timeFrom, userState.timeTo, appState.sqlExpression, userState.datasource]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (userState.selectedRow === null) {

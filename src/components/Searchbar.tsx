@@ -247,7 +247,7 @@ export const Searchbar: React.FC<SearchbarProps> = ({ fields, labels }) => {
           </div>
         )}
         <div className="flex items-center pr-3">
-          {appState.isLoading && userState.streamingMode && (
+          {appState.isLoading && (
             <div className="mr-2 w-6 h-6 rounded-full animate-spin border-3 border-[#28A0A6] border-t-transparent"></div>
           )}
           {userState.mode === 'sql' && (

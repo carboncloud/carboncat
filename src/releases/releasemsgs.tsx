@@ -76,4 +76,25 @@ export const Releases: Record<string, ReleaseInfo> = {
       </>
     ),
   },
+  '0.0.13': {
+    notes: (
+      <>
+        This should be the final version before updating prod. Small fixes, no new features.
+        <br />
+        The streaming mode is removed in this version, since batch mode is so much more effective.
+        <br />
+        <br />
+        <b>Bugfixes</b>
+        <br />
+        - Add default query limit if undefined by user
+        <br />
+        - Add datasource to auto refresh deps.
+        <br />
+        <br />
+        🎄 Merry Chrysler 🎄
+        <br />
+        Scaffolders
+      </>
+    ),
+  },
 };

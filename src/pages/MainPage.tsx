@@ -17,14 +17,7 @@ import { useSharedState } from 'components/StateContext';
 import { Error } from 'components/Error';
 import { useClickHouse } from 'components/Clickhouse';
 import { GenerateURLParams } from 'utils/url';
-import {
-  faArrowUpRightFromSquare,
-  faCopy,
-  faSave,
-  faStop,
-  faTowerBroadcast,
-  faLayerGroup,
-} from '@fortawesome/free-solid-svg-icons';
+import { faArrowUpRightFromSquare, faCopy, faSave } from '@fortawesome/free-solid-svg-icons';
 import { useSettings } from 'components/SettingsContext';
 import { SideMenu } from 'components/SideMenu';
 import { Settings } from 'components/Settings';
@@ -42,7 +35,7 @@ function PageOne() {
 
   const { settingsState } = useSettings();
   const { userState, userDispatch, appState, appDispatch } = useSharedState();
-  const { refreshSqlData, cancelQuery } = useClickHouse();
+  const { refreshSqlData } = useClickHouse();
 
   useEffect(() => {
     if (!chartContainerRef.current) {
@@ -162,26 +155,6 @@ function PageOne() {
             userDispatch({ type: 'SET_REFRESH_INTERVAL', payload: ri });
           }}
         />
-        <Button
-          options={{
-            label: userState.streamingMode ? 'Streaming' : 'Batch',
-            disabled: false,
-            icon: userState.streamingMode ? faTowerBroadcast : faLayerGroup,
-          }}
-          className="mr-2"
-          onClick={() => userDispatch({ type: 'SET_STREAMING_MODE', payload: !userState.streamingMode })}
-        />
-        {userState.streamingMode && (
-          <Button
-            options={{
-              label: 'Cancel',
-              icon: faStop,
-              disabled: !(appState.isLoading && userState.streamingMode),
-            }}
-            onClick={cancelQuery}
-            className="mr-2"
-          />
-        )}
       </div>
 
       <div className="flex flex-grow gap-2 min-h-0 max-h-full">
@@ -195,7 +168,7 @@ function PageOne() {
             searchTerm={userState.searchTerm}
             setLogDetails={handleSetLogDetails}
           />
-          {appState.isLoading && !userState.streamingMode && (
+          {appState.isLoading && (
             <div
               className={clsx(
                 'flex absolute inset-0 z-10 justify-center items-center rounded-lg backdrop-blur-[3px]',

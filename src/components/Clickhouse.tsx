@@ -120,11 +120,6 @@ export function useClickHouse() {
 
     refreshLabels();
 
-    if (userState.streamingMode) {
-      refreshSqlDataStreaming();
-      return;
-    }
-
     appDispatch({ type: 'LOADING' });
     Promise.all([
       runLogQuery(

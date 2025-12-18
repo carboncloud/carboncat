@@ -23,7 +23,6 @@ export interface UserState {
   selectedRow: LogDetailsSelection | null;
   selectedFields: string[];
   selectedLabels: string[];
-  streamingMode: boolean;
 }
 
 const initialUserState: UserState = {
@@ -38,9 +37,8 @@ const initialUserState: UserState = {
   logLevels: ['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'],
   refreshInterval: '',
   selectedRow: null,
-  selectedFields: ['level', 'timestamp', 'traceID', 'spanID', 'body'],
-  selectedLabels: ['labels.app', 'labels.component', 'labels.team'],
-  streamingMode: false,
+  selectedFields: ['level', 'timestamp', 'traceID', 'spanID', 'app', 'service', 'team', 'body'],
+  selectedLabels: [],
 };
 
 interface AppState {
@@ -91,7 +89,6 @@ type UserAction =
   | { type: 'TOGGLE_FIELD'; payload: string }
   | { type: 'OPEN_SQL_EDITOR' }
   | { type: 'CLOSE_SQL_EDITOR' }
-  | { type: 'SET_STREAMING_MODE'; payload: boolean }
   | { type: 'SET_STATE'; payload: UserState };
 
 type AppAction =
@@ -163,8 +160,6 @@ function userReducer(state: UserState, action: UserAction): UserState {
           ? state.selectedFields.filter((v) => v !== action.payload)
           : [...state.selectedFields, action.payload],
       };
-    case 'SET_STREAMING_MODE':
-      return { ...state, streamingMode: action.payload };
     case 'SET_STATE':
       return { ...state, ...action.payload };
     default:

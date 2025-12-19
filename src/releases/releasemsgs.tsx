@@ -97,4 +97,12 @@ export const Releases: Record<string, ReleaseInfo> = {
       </>
     ),
   },
+  '0.0.14': {
+    notes: (
+      <>
+        <b>Bugfixes</b>
+        <br />- Able to parse log messages with single quotes in the message.
+      </>
+    ),
+  },
 };

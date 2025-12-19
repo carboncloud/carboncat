@@ -48,7 +48,7 @@ export function generateLogQuery(
   FROM ${tableName}
   WHERE
     ( timestamp >= $__fromTime AND timestamp <= $__toTime )
-    AND (body ILIKE '%${searchTerm}%')
+    AND (body ILIKE '%${searchTerm.replaceAll("'", "\\'")}%')
     AND level IN ('DEBUG','INFO','WARN','ERROR','FATAL')
     ${generateHLFilterString('level', logLevels)}
     ${generateFilterString(filters)}
@@ -82,7 +82,7 @@ export async function getLogDetails(
     toUnixTimestamp64Milli(timestamp) = ${timestamp}
     AND app = '${app}' 
     AND service = '${service}'
-    AND body = '${body}'
+    AND body = '${body.replaceAll("'", "\\'")}'
   LIMIT 1`;
 
   const fields = await runQuery(rawSql, dsName, timeRange);

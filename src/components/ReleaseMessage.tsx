@@ -21,12 +21,12 @@ export const ReleaseMessage: React.FC<ReleaseMessageProps> = () => {
 
   useEffect(() => {
     const sortedKeys = Object.keys(Releases).sort(compareVersions);
-    const filtered = sortedKeys.filter((v) => compareVersions(v, lastRead) > 0);
+    const filtered = sortedKeys.filter((v) => compareVersions(v, lastRead) < 0);
     setNewReleases(filtered);
   }, [lastRead]);
 
   const handleClose = () => {
-    const lastVer = newReleases[newReleases.length - 1];
+    const lastVer = newReleases[0];
     localStorage.setItem('carboncat.lastSeenVersion', lastVer);
     setLastRead(lastVer);
   };
@@ -42,29 +42,31 @@ export const ReleaseMessage: React.FC<ReleaseMessageProps> = () => {
         >
           <div
             className={clsx(
-              'flex flex-col p-4 w-1/3 min-h-1/3 max-h-2/3 overflow-y-scroll rounded-lg shadow-2xl border-1 justify-between',
+              'relative flex flex-col p-4 w-1/3 min-h-1/3 max-h-2/3 overflow-hidden rounded-lg shadow-2xl border-1',
               theme.isDark ? 'bg-neutral-800 border-neutral-600' : 'bg-white border-neutral-300'
             )}
           >
-            <div className="flex flex-col">
-              <span className="w-full text-lg font-semibold text-neutral-500">Log Browser Updated!</span>
-              <div className="flex flex-col gap-2 px-4 pt-4">
-                {newReleases.map((version) => (
-                  <div key={version}>
-                    <h3 className="!font-bold">v{version}</h3>
-                    <p>{Releases[version].notes}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <span className='w-full text-lg font-semibold text-neutral-500'>
+              Log Browser Updated!
+            </span>
             <button
-              className={'bg-fuchsia-800 !text-white !font-semibold !rounded-md'}
+              className='bg-fuchsia-800 !text-white !font-semibold !rounded-md absolute top-2 right-2'
               onClick={() => {
                 handleClose();
               }}
             >
               Close
             </button>
+            <div className='flex flex-col overflow-y-scroll max-h-full mt-12'>
+              <div className='flex flex-col gap-2 px-4 pt-4'>
+                {newReleases.map((version) => (
+                  <div key={version}>
+                    <h3 className='!font-bold'>v{version}</h3>
+                    <p>{Releases[version].notes}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       ) : (
@@ -82,10 +84,10 @@ function compareVersions(a: String, b: String) {
     const na = pa[i] || 0;
     const nb = pb[i] || 0;
     if (na < nb) {
-      return -1;
+      return 1;
     }
     if (na > nb) {
-      return 1;
+      return -1;
     }
   }
   return 0;

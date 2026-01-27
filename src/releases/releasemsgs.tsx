@@ -8,7 +8,7 @@ export const Releases: Record<string, ReleaseInfo> = {
     notes: (
       <>
         <b>CRITICAL Bugfixes</b>
-        <br />- Release info now in decending order.
+        <br />- Release info now in descending order.
       </>
     ),
   },

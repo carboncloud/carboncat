@@ -4,6 +4,14 @@ export type ReleaseInfo = {
 };
 
 export const Releases: Record<string, ReleaseInfo> = {
+  '0.0.16': {
+    notes: (
+      <>
+        <b>CRITICAL Bugfixes</b>
+        <br />- Fix close button on top in release message popup.
+      </>
+    ),
+  },
   '0.0.15': {
     notes: (
       <>

@@ -4,42 +4,35 @@ export type ReleaseInfo = {
 };
 
 export const Releases: Record<string, ReleaseInfo> = {
-  '0.0.10': {
+  '0.0.15': {
     notes: (
       <>
-        Adds ability to <b>stream</b> logs from the server instead of getting everything in one go. This speeds up the
-        time from refresh until you see the first 500 lines.
-        <br />
-        <br />
-        To enter <b>streaming mode</b> there is a new button in the top right corner, next to the refresh and auto
-        refresh buttons.
-        <br />
-        By default you are still in the old batch mode. When you enter <b>streaming mode</b> another button will also
-        appear. This is a stop button so you can cancel a running query.
-        <br />
-        <br />
-        <b>NOTE:</b> The <b>streaming mode</b> is still in an early phase. Use it with some caution. If a log line that
-        you expect is not appearing, check with batch mode as well.
-        <br />
-        <br />
-        <b>THIS FEATURE ONLY WORKS WELL IF YOU ARE SORTING BY TIME. </b> If not log messages will pop up all over the
-        place.
-        <br />
-        <br />
-        🎄 Merry Chrysler 🎄
-        <br />
-        Scaffolders
+        <b>CRITICAL Bugfixes</b>
+        <br />- Release info now in decending order.
       </>
     ),
   },
-  '0.0.11': {
+  '0.0.14': {
     notes: (
       <>
-        Implements a smarter batch query to Clickhouse to minimise data transfer to frontend. Now we only fetch the data
-        you as a user has selected to view, which reduces the data size massively and gives a much faster query!
+        <b>Bugfixes</b>
+        <br />- Able to parse log messages with single quotes in the message.
+      </>
+    ),
+  },
+  '0.0.13': {
+    notes: (
+      <>
+        This should be the final version before updating prod. Small fixes, no new features.
+        <br />
+        The streaming mode is removed in this version, since batch mode is so much more effective.
         <br />
         <br />
-        <b>Streaming mode</b> is still there, but <b>DONT USE IT</b>. The batch mode should out perform it by miles.
+        <b>Bugfixes</b>
+        <br />
+        - Add default query limit if undefined by user
+        <br />
+        - Add datasource to auto refresh deps.
         <br />
         <br />
         🎄 Merry Chrysler 🎄
@@ -76,19 +69,14 @@ export const Releases: Record<string, ReleaseInfo> = {
       </>
     ),
   },
-  '0.0.13': {
+  '0.0.11': {
     notes: (
       <>
-        This should be the final version before updating prod. Small fixes, no new features.
+        Implements a smarter batch query to Clickhouse to minimise data transfer to frontend. Now we only fetch the data
+        you as a user has selected to view, which reduces the data size massively and gives a much faster query!
         <br />
-        The streaming mode is removed in this version, since batch mode is so much more effective.
         <br />
-        <br />
-        <b>Bugfixes</b>
-        <br />
-        - Add default query limit if undefined by user
-        <br />
-        - Add datasource to auto refresh deps.
+        <b>Streaming mode</b> is still there, but <b>DONT USE IT</b>. The batch mode should out perform it by miles.
         <br />
         <br />
         🎄 Merry Chrysler 🎄
@@ -97,11 +85,31 @@ export const Releases: Record<string, ReleaseInfo> = {
       </>
     ),
   },
-  '0.0.14': {
+  '0.0.10': {
     notes: (
       <>
-        <b>Bugfixes</b>
-        <br />- Able to parse log messages with single quotes in the message.
+        Adds ability to <b>stream</b> logs from the server instead of getting everything in one go. This speeds up the
+        time from refresh until you see the first 500 lines.
+        <br />
+        <br />
+        To enter <b>streaming mode</b> there is a new button in the top right corner, next to the refresh and auto
+        refresh buttons.
+        <br />
+        By default you are still in the old batch mode. When you enter <b>streaming mode</b> another button will also
+        appear. This is a stop button so you can cancel a running query.
+        <br />
+        <br />
+        <b>NOTE:</b> The <b>streaming mode</b> is still in an early phase. Use it with some caution. If a log line that
+        you expect is not appearing, check with batch mode as well.
+        <br />
+        <br />
+        <b>THIS FEATURE ONLY WORKS WELL IF YOU ARE SORTING BY TIME. </b> If not log messages will pop up all over the
+        place.
+        <br />
+        <br />
+        🎄 Merry Chrysler 🎄
+        <br />
+        Scaffolders
       </>
     ),
   },

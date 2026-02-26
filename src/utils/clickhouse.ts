@@ -13,6 +13,11 @@ const keyMap: Record<string, string> = {
   body: 'Body',
 };
 
+// Properly escape strings for SQL by escaping backslashes first, then single quotes
+function escapeSql(str: string): string {
+  return str.replaceAll('\\', '\\\\').replaceAll("'", "\\'");
+}
+
 export function generateLogQuery(
   searchTerm: string,
   labels: string[],
@@ -48,7 +53,7 @@ export function generateLogQuery(
   FROM ${tableName}
   WHERE
     ( timestamp >= $__fromTime AND timestamp <= $__toTime )
-    AND (body ILIKE '%${searchTerm.replaceAll("'", "\\'")}%')
+    AND (body ILIKE '%${escapeSql(searchTerm)}%')
     AND level IN ('DEBUG','INFO','WARN','ERROR','FATAL')
     ${generateHLFilterString('level', logLevels)}
     ${generateFilterString(filters)}
@@ -66,6 +71,9 @@ export async function getLogDetails(
   timeRange: TimeRange,
   setData: (data: Field[]) => void
 ): Promise<void> {
+  // Use hash comparison for the body to avoid issues with very long bodies,
+  // special characters, and query size limits. Timestamp + app + service should
+  // be unique enough, but we add body hash for extra safety.
   const rawSql = `
   SELECT
     Timestamp as "timestamp",
@@ -80,9 +88,9 @@ export async function getLogDetails(
   FROM ${tableName}
   WHERE
     toUnixTimestamp64Milli(timestamp) = ${timestamp}
-    AND app = '${app}' 
-    AND service = '${service}'
-    AND body = '${body.replaceAll("'", "\\'")}'
+    AND AppName = '${escapeSql(app)}' 
+    AND ComponentName = '${escapeSql(service)}'
+    AND cityHash64(Body) = cityHash64('${escapeSql(body)}')
   LIMIT 1`;
 
   const fields = await runQuery(rawSql, dsName, timeRange);
@@ -215,7 +223,7 @@ SELECT
     countIf(SeverityText = 'FATAL') AS FATAL
 FROM ${tableName}
  WHERE ( time >= $__fromTime AND time <= $__toTime )
-    AND (Body ILIKE '%${searchTerm}%')
+    AND (Body ILIKE '%${escapeSql(searchTerm)}%')
     AND SeverityText IN ('DEBUG','INFO','WARN','ERROR','FATAL')
     AND ('' = '' OR TraceId = '')
     ${generateHLFilterString("LogAttributes['app']", apps)}

@@ -165,7 +165,7 @@ export const LogDetails: React.FC<LogDetailsProps> = ({ options, fields, setLogD
               typeof labelVals['language'] === 'string' &&
               languageIcons[labelVals['language'] as keyof typeof languageIcons] && (
                 <FontAwesomeIcon
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                   
                   icon={languageIcons[labelVals['language'] as keyof typeof languageIcons] as any}
                   className={clsx(
                     `text-2xl  text-[${languageColor[labelVals['language'] as keyof typeof languageColor]}]`

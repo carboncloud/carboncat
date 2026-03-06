@@ -1,6 +1,6 @@
 {
   "name": "carboncat",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "scripts": {
     "build": "webpack -c ./.config/webpack/webpack.config.ts --env production",
     "dev": "webpack -w -c ./.config/webpack/webpack.config.ts --env development",
@@ -29,7 +29,6 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^25.3.5",
     "@types/react-window": "^1.8.8",
-    "@types/testing-library__jest-dom": "6.0.0",
     "@typescript-eslint/eslint-plugin": "^8.56.1",
     "@typescript-eslint/parser": "^8.56.1",
     "copy-webpack-plugin": "^14.0.0",

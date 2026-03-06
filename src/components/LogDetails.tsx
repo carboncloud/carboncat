@@ -215,6 +215,24 @@ export const LogDetails: React.FC<LogDetailsProps> = ({ options, fields, setLogD
             )}
           </div>
 
+          <div className="flex flex-col px-2 pt-4">
+            <span className="mb-2 text-lg font-bold uppercase text-neutral-400">Labels</span>
+            <table className="w-full">
+              {labelVals &&
+                Object.entries(labelVals).map(([k, v]) => {
+                  return (
+                    <tr
+                      key={k}
+                      className={clsx('font-mono', theme.isDark ? 'hover:bg-neutral-200/20' : 'hover:bg-neutral-200')}
+                    >
+                      <td className={`font-semibold`}>{k}:</td>
+                      <td className={`break-all`}>{v}</td>
+                    </tr>
+                  );
+                })}
+            </table>
+          </div>
+
           <div className="relative">
             <span
               className={clsx(
@@ -235,24 +253,6 @@ export const LogDetails: React.FC<LogDetailsProps> = ({ options, fields, setLogD
               <FontAwesomeIcon className="text-xl cursor-pointer text-neutral-400" icon={faCopy} />
               <span className="hidden text-xs group-hover:block">{copied ? 'Copied!' : 'Copy'}</span>
             </div>
-          </div>
-
-          <div className="flex flex-col px-2 pt-4">
-            <span className="mb-2 text-lg font-bold uppercase text-neutral-400">Labels</span>
-            <table className="w-full">
-              {labelVals &&
-                Object.entries(labelVals).map(([k, v]) => {
-                  return (
-                    <tr
-                      key={k}
-                      className={clsx('font-mono', theme.isDark ? 'hover:bg-neutral-200/20' : 'hover:bg-neutral-200')}
-                    >
-                      <td className={`font-semibold`}>{k}:</td>
-                      <td className={`break-all`}>{v}</td>
-                    </tr>
-                  );
-                })}
-            </table>
           </div>
         </motion.div>
       )}

@@ -482,8 +482,8 @@ export const Table: React.FC<TableProps> = ({
 
   // Cleanup scroll listener on unmount
   useEffect(() => {
+    const el = scrollContainerRef.current;
     return () => {
-      const el = scrollContainerRef.current;
       if (el) {
         el.removeEventListener('scroll', syncHeaderScroll);
       }

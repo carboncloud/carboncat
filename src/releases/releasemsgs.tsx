@@ -4,6 +4,14 @@ export type ReleaseInfo = {
 };
 
 export const Releases: Record<string, ReleaseInfo> = {
+  '0.0.19': {
+    notes: (
+      <>
+        <b>Bugfixes</b>
+        <br />- Header now side scrolls with the body.
+      </>
+    ),
+  },
   '0.0.18': {
     notes: (
       <>

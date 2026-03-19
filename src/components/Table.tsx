@@ -253,6 +253,9 @@ export const Table: React.FC<TableProps> = ({
   const [sortField, setSortField] = useState<string>('timestamp');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const headerRef = React.useRef<HTMLDivElement>(null);
+
   let rowCount = 0;
   if (fields.length > 0) {
     rowCount = fields[0].values.length;
@@ -334,10 +337,13 @@ export const Table: React.FC<TableProps> = ({
   const gridTemplateColumns = keys.map((k) => columnWidths[k]).join(' ');
 
   const sortedRowIndices = useMemo(() => {
-    const keyIndexMap = fields.reduce((acc, field, idx) => {
-      acc[field.name] = idx;
-      return acc;
-    }, {} as { [key: string]: number });
+    const keyIndexMap = fields.reduce(
+      (acc, field, idx) => {
+        acc[field.name] = idx;
+        return acc;
+      },
+      {} as { [key: string]: number }
+    );
 
     const indices = Array.from({ length: rowCount }, (_, i) => i);
 
@@ -380,10 +386,13 @@ export const Table: React.FC<TableProps> = ({
   const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
     const rowIndex = sortedRowIndices[index];
     const rowData = keys.map((key: string) => {
-      const keyIndexMap = fields.reduce((acc, field, idx) => {
-        acc[field.name] = idx;
-        return acc;
-      }, {} as { [key: string]: number });
+      const keyIndexMap = fields.reduce(
+        (acc, field, idx) => {
+          acc[field.name] = idx;
+          return acc;
+        },
+        {} as { [key: string]: number }
+      );
 
       if (key.startsWith('labels.')) {
         const colIdx = keyIndexMap['labels'];
@@ -403,6 +412,7 @@ export const Table: React.FC<TableProps> = ({
           alignItems: 'center',
           paddingLeft: '0.75rem',
           paddingRight: '0.75rem',
+          minWidth: 'max-content',
         }}
         role="button"
         onClick={() => setLogDetails(rowIndex)}
@@ -442,6 +452,44 @@ export const Table: React.FC<TableProps> = ({
     );
   };
 
+  const headerInnerRef = React.useRef<HTMLDivElement>(null);
+
+  // Sync header horizontal scroll and width with the virtualized list's outer scroll container
+  const syncHeaderScroll = React.useCallback(() => {
+    if (scrollContainerRef.current && headerRef.current) {
+      headerRef.current.scrollLeft = scrollContainerRef.current.scrollLeft;
+    }
+  }, []);
+
+  const syncHeaderWidth = React.useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (el && headerInnerRef.current) {
+      // Match the header's inner width to the row container's scrollable width
+      const scrollW = el.scrollWidth;
+      headerInnerRef.current.style.minWidth = `${scrollW}px`;
+    }
+  }, []);
+
+  // Re-sync header width whenever column widths or data change
+  useEffect(() => {
+    // Need a rAF so the row container has reflowed with the new grid template
+    const id = requestAnimationFrame(() => {
+      syncHeaderWidth();
+      syncHeaderScroll();
+    });
+    return () => cancelAnimationFrame(id);
+  }, [gridTemplateColumns, rowCount, syncHeaderWidth, syncHeaderScroll]);
+
+  // Cleanup scroll listener on unmount
+  useEffect(() => {
+    return () => {
+      const el = scrollContainerRef.current;
+      if (el) {
+        el.removeEventListener('scroll', syncHeaderScroll);
+      }
+    };
+  }, [syncHeaderScroll]);
+
   return (
     <div
       className={clsx(
@@ -450,55 +498,76 @@ export const Table: React.FC<TableProps> = ({
       )}
       style={{ contain: 'strict' }}
     >
-      {/* Header */}
+      {/* Header — scrolls horizontally in sync with the rows */}
       <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns,
-          gap: '0.75rem',
-          paddingLeft: '0.75rem',
-          paddingRight: '0.75rem',
-        }}
+        ref={headerRef}
         className={clsx(
-          'sticky top-0 z-10 w-full uppercase border-b-1',
+          'sticky top-0 z-10 w-full uppercase border-b-1 overflow-hidden',
           theme.isDark ? 'bg-[#111217] border-neutral-300/20' : 'bg-white border-neutral-300'
         )}
       >
-        {keys.map((key) => (
-          <div
-            key={key}
-            className={clsx(
-              'cursor-pointer select-none overflow-hidden flex justify-between gap-3',
-              theme.isDark ? 'hover:bg-gray-50/20' : 'hover:bg-gray-50'
-            )}
-          >
+        <div
+          ref={headerInnerRef}
+          style={{
+            display: 'grid',
+            gridTemplateColumns,
+            gap: '0.75rem',
+            paddingLeft: '0.75rem',
+            paddingRight: '0.75rem',
+          }}
+        >
+          {keys.map((key) => (
             <div
-              className="flex flex-grow justify-start items-center py-3 px-2 truncate"
-              onClick={() => {
-                if (key === sortField) {
-                  setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-                } else {
-                  setSortField(key);
-                  setSortDirection('asc');
-                }
-              }}
+              key={key}
+              className={clsx(
+                'cursor-pointer select-none overflow-hidden flex justify-between gap-3',
+                theme.isDark ? 'hover:bg-gray-50/20' : 'hover:bg-gray-50'
+              )}
             >
-              {sortField === key && <span className="mr-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>}
-              <span className="truncate">{prettifyHeaderNames(key, false)}</span>
+              <div
+                className="flex flex-grow justify-start items-center py-3 px-2 truncate"
+                onClick={() => {
+                  if (key === sortField) {
+                    setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+                  } else {
+                    setSortField(key);
+                    setSortDirection('asc');
+                  }
+                }}
+              >
+                {sortField === key && <span className="mr-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>}
+                <span className="truncate">{prettifyHeaderNames(key, false)}</span>
+              </div>
+              <div
+                className="pl-4 w-0.5 hover:border-r-2 cursor-ew-resize hover:border-neutral-300"
+                onMouseDown={(e) => handleMouseDown(key, e)}
+              />
             </div>
-            <div
-              className="pl-4 w-0.5 hover:border-r-2 cursor-ew-resize hover:border-neutral-300"
-              onMouseDown={(e) => handleMouseDown(key, e)}
-            />
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Virtualized Rows */}
-      <div className="flex-1">
+      <div className="flex-1 overflow-hidden">
         <AutoSizer>
           {({ height, width }) => (
-            <List height={height} width={width} itemCount={rowCount} itemSize={lineHeight}>
+            <List
+              height={height}
+              width={width}
+              itemCount={rowCount}
+              itemSize={lineHeight}
+              outerRef={scrollContainerRef}
+              onItemsRendered={() => {
+                // Attach horizontal scroll listener to the outer scroll container
+                const el = scrollContainerRef.current;
+                if (el && !(el as any).__headerSyncAttached) {
+                  el.addEventListener('scroll', syncHeaderScroll);
+                  (el as any).__headerSyncAttached = true;
+                }
+                // Keep header inner width matched to the rows' scrollable width
+                syncHeaderWidth();
+              }}
+            >
               {Row}
             </List>
           )}

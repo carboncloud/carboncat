@@ -54,8 +54,8 @@ export function generateLogQuery(
   WHERE
     ( timestamp >= $__fromTime AND timestamp <= $__toTime )
     AND (body ILIKE '%${escapeSql(searchTerm)}%')
-    AND level IN ('DEBUG','INFO','WARN','ERROR','FATAL')
-    ${generateHLFilterString('level', logLevels)}
+    AND SeverityText IN ('DEBUG','INFO','WARN','ERROR','FATAL')
+    ${generateHLFilterString('SeverityText', logLevels)}
     ${generateFilterString(filters)}
   ORDER BY timestamp DESC LIMIT ${limit ? limit : 20000}`;
 

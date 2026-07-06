@@ -24,9 +24,12 @@ export const Overview: React.FC<OverviewProps> = ({ fields }) => {
 
   fields.forEach((f: Field) => {
     if (f.name === 'level') {
-      totalValue = f.values.length;
       f.values.forEach((v: string) => {
-        data[v].value += 1;
+        const key = typeof v === 'string' ? v.toUpperCase() : '';
+        if (data[key]) {
+          data[key].value += 1;
+          totalValue += 1;
+        }
       });
     }
   });

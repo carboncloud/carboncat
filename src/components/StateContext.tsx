@@ -5,7 +5,7 @@ import { Filter } from 'types/filters';
 import { Mode } from 'types/state';
 import { parseTimeRangeRaw } from 'utils/functions';
 import { GenerateURLParams } from 'utils/url';
-import { DATASOURCES } from 'utils/variables';
+import { CLUSTERS, DATASOURCES } from 'utils/variables';
 import { useSettings } from './SettingsContext';
 import { LogDetailsSelection, Notification } from 'types/types';
 
@@ -18,6 +18,7 @@ export interface UserState {
   timeFrom: string;
   timeTo: string;
   datasource: string;
+  cluster: string;
   logLevels: string[];
   refreshInterval: string;
   selectedRow: LogDetailsSelection | null;
@@ -34,6 +35,7 @@ const initialUserState: UserState = {
   timeFrom: 'now-5m',
   timeTo: 'now',
   datasource: DATASOURCES[0].value,
+  cluster: CLUSTERS[0].value,
   logLevels: ['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'],
   refreshInterval: '',
   selectedRow: null,
@@ -81,6 +83,7 @@ type UserAction =
   | { type: 'FILTER_ONLY'; payload: Filter }
   | { type: 'SET_TIMERANGE'; payload: TimeRange }
   | { type: 'SET_DATASOURCE'; payload: string }
+  | { type: 'SET_CLUSTER'; payload: string }
   | { type: 'SET_LOGLEVELS'; payload: string[] }
   | { type: 'SET_REFRESH_INTERVAL'; payload: string }
   | { type: 'SET_LOG_DETAILS'; payload: LogDetailsSelection }
@@ -138,6 +141,8 @@ function userReducer(state: UserState, action: UserAction): UserState {
       };
     case 'SET_DATASOURCE':
       return { ...state, datasource: action.payload };
+    case 'SET_CLUSTER':
+      return { ...state, cluster: action.payload };
     case 'SET_LOGLEVELS':
       return { ...state, logLevels: action.payload };
     case 'SET_REFRESH_INTERVAL':
@@ -309,6 +314,9 @@ const userStateFromQueryParams = (u: URLSearchParams, persistantUserState: boole
   }
   if (u.get('ds')) {
     us.datasource = u.get('ds') as string;
+  }
+  if (u.get('cluster')) {
+    us.cluster = u.get('cluster') as string;
   }
   if (u.get('logLevels')) {
     us.logLevels = JSONparseDefault(atob(u.get('logLevels') as string), us.logLevels);

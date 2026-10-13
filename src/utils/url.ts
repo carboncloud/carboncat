@@ -13,6 +13,7 @@ export function GenerateURLParams(userState: any, appState: any, absoluteTimeRan
       params.set("to", userState.timeTo);
     }
   if (userState.datasource) {params.set("ds", userState.datasource)};
+  if (userState.cluster) {params.set("cluster", userState.cluster)};
   if (userState.logLevels?.length) {
     params.set("logLevels", btoa(JSON.stringify(userState.logLevels)));
   }

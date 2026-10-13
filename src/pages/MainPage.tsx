@@ -9,7 +9,7 @@ import { Table } from 'components/Table';
 import { LogDetails } from 'components/LogDetails';
 import { Overview } from 'components/Overview';
 import { Searchbar } from 'components/Searchbar';
-import { DATASOURCES } from 'utils/variables';
+import { CLUSTERS, DATASOURCES } from 'utils/variables';
 import { Button, ToggleButtonGroup } from 'components/Components';
 import { TimeSeriesBars } from 'components/TimeSeriesBars';
 import { SqlEditor } from 'components/SqlEditor';
@@ -116,6 +116,13 @@ function PageOne() {
           options={DATASOURCES}
           onChange={(d: string) => {
             userDispatch({ type: 'SET_DATASOURCE', payload: d });
+          }}
+        />
+        <ToggleButtonGroup
+          defaultValue={userState.cluster}
+          options={CLUSTERS}
+          onChange={(c: string) => {
+            userDispatch({ type: 'SET_CLUSTER', payload: c });
           }}
         />
         <Button

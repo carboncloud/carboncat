@@ -1,5 +1,8 @@
-# This GitHub Action automates the process of building Grafana plugins.
-# (For more information, see https://github.com/grafana/plugin-actions/blob/main/build-plugin/README.md)
+# Builds and releases the plugin on a version tag push.
+#
+# This is a minimal, internal-only release flow: no Grafana plugin-validator
+# audit, no marketplace-submission steps, no signing. Those are for plugins
+# published to grafana.com, which this isn't.
 name: Release
 
 on:
@@ -7,23 +10,42 @@ on:
     tags:
       - 'v*' # Run workflow on version tags, e.g. v1.0.0.
 
-permissions: read-all
+permissions:
+  contents: write
 
 jobs:
   release:
-    permissions:
-      contents: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
-      - uses: grafana/plugin-actions/build-plugin@304ed38a05911eda030608b10ff9ca59616e465c # e2e-version/v3.0.1
-        # Uncomment to enable plugin signing
-        # (For more info on how to generate the access policy token see https://grafana.com/developers/plugin-tools/publish-a-plugin/sign-a-plugin#generate-an-access-policy-token)
-        #with:
-        # Make sure to save the token in your repository secrets
-        #policy_token: $
-        # Usage of GRAFANA_API_KEY is deprecated, prefer `policy_token` option above
-        #grafana_token: $
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Package plugin
+        id: package
+        run: |
+          PLUGIN_ID=$(jq -r .id dist/plugin.json)
+          PLUGIN_VERSION=$(jq -r .info.version dist/plugin.json)
+          ARCHIVE="${PLUGIN_ID}-${PLUGIN_VERSION}.zip"
+
+          mv dist "${PLUGIN_ID}"
+          zip "${ARCHIVE}" "${PLUGIN_ID}" -r
+
+          echo "archive=${ARCHIVE}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          generate_release_notes: true
+          files: ./${{ steps.package.outputs.archive }}

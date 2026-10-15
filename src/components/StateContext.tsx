@@ -37,7 +37,7 @@ const initialUserState: UserState = {
   logLevels: ['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'],
   refreshInterval: '',
   selectedRow: null,
-  selectedFields: ['level', 'timestamp', 'traceID', 'spanID', 'app', 'service', 'team', 'body'],
+  selectedFields: ['level', 'timestamp', 'traceID', 'spanID', 'app', 'service', 'body'],
   selectedLabels: [],
 };
 

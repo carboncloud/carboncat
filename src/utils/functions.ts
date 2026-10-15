@@ -120,7 +120,9 @@ export const generateFilterString = (filters: Filter[]) => {
 
 export function generateHLFilterString(key: string, cmps: string[], and = true): string {
   if (cmps.length === 0) {
-    return '';
+    // No values selected means nothing should match, but we still need a
+    // valid boolean expression to avoid producing an empty WHERE/AND clause.
+    return and ? 'AND ( 1 = 0 )' : '( 1 = 0 )';
   }
   const formatted = `(${cmps.map((s) => `'${s}'`).join(',')})`;
   if (and) {

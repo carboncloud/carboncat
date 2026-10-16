@@ -5,7 +5,7 @@ import { lastValueFrom, isObservable, Observable } from 'rxjs';
 import { generateFilterString, generateHLFilterString } from './functions';
 import { Filter } from 'types/filters';
 
-const tableName = 'otel_logs_cc';
+const tableName = 'otel_logs';
 
 const keyMap: Record<string, string> = {
   spanID: 'SpanId',

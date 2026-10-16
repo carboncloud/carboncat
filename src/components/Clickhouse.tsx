@@ -11,11 +11,6 @@ import {
 import { Field, rangeUtil } from '@grafana/data';
 import { Subscription } from 'rxjs';
 import { useSettings } from './SettingsContext';
-import { Filter } from 'types/filters';
-
-function withClusterFilter(filters: Filter[], cluster: string): Filter[] {
-  return [...filters, { key: "ResourceAttributes['k8s.cluster.name']", operation: '=', value: cluster }];
-}
 
 export function useClickHouse() {
   const { userState, appState, appDispatch } = useSharedState();
@@ -64,7 +59,7 @@ export function useClickHouse() {
           : generateLogQuery(
               userState.searchTerm,
               userState.selectedLabels,
-              withClusterFilter(userState.filters, userState.cluster),
+              userState.filters,
               userState.logLevels,
               settingsState.maxNumberOfLines
             );
@@ -78,7 +73,6 @@ export function useClickHouse() {
       userState.searchTerm,
       userState.selectedLabels,
       userState.filters,
-      userState.cluster,
       userState.logLevels,
       settingsState.maxNumberOfLines,
     ]
@@ -106,7 +100,7 @@ export function useClickHouse() {
       getLabels(
         userState.datasource,
         rangeUtil.convertRawToRange({ from: userState.timeFrom, to: userState.timeTo }),
-        withClusterFilter(userState.filters, userState.cluster),
+        userState.filters,
         userState.logLevels,
         setLabels
       ),

@@ -48,7 +48,8 @@ export function generateLogQuery(
     ComponentName as "service",
     Team as "team",
     TraceId as "traceID",
-    SpanId as "spanID"
+    SpanId as "spanID",
+    ResourceAttributes['k8s.cluster.name'] as "cluster"
 
   FROM ${tableName}
   WHERE
@@ -97,6 +98,24 @@ export async function getLogDetails(
   setData(fields);
 }
 
+export async function getClusters(
+  dsName: string,
+  timeRange: TimeRange,
+  setData: (data: Field[]) => void
+): Promise<void> {
+  // Deliberately no time filter here - we want every cluster that has ever
+  // reported, not just ones active in the currently selected time range.
+  const rawSql = `
+    SELECT DISTINCT ResourceAttributes['k8s.cluster.name'] AS cluster
+    FROM ${tableName}
+    WHERE ResourceAttributes['k8s.cluster.name'] != ''
+    ORDER BY cluster
+`;
+
+  const fields = await runQuery(rawSql, dsName, timeRange);
+  setData(fields);
+}
+
 export async function getLabels(
   dsName: string,
   timeRange: TimeRange,
@@ -118,7 +137,8 @@ export async function getLabels(
         ComponentName as "service",
         Team as "team",
         TraceId as "traceID",
-        SpanId as "spanID"
+        SpanId as "spanID",
+        ResourceAttributes['k8s.cluster.name'] as "cluster"
       FROM ${tableName}
         WHERE $__timeFilter(Timestamp)
         AND SeverityText IN ('DEBUG','INFO','WARN','ERROR','FATAL')

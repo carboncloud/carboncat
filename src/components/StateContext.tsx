@@ -5,7 +5,7 @@ import { Filter } from 'types/filters';
 import { Mode } from 'types/state';
 import { parseTimeRangeRaw } from 'utils/functions';
 import { GenerateURLParams } from 'utils/url';
-import { CLUSTERS, DATASOURCES } from 'utils/variables';
+import { DATASOURCES } from 'utils/variables';
 import { useSettings } from './SettingsContext';
 import { LogDetailsSelection, Notification } from 'types/types';
 
@@ -18,7 +18,6 @@ export interface UserState {
   timeFrom: string;
   timeTo: string;
   datasource: string;
-  cluster: string;
   logLevels: string[];
   refreshInterval: string;
   selectedRow: LogDetailsSelection | null;
@@ -35,11 +34,10 @@ const initialUserState: UserState = {
   timeFrom: 'now-5m',
   timeTo: 'now',
   datasource: DATASOURCES[0].value,
-  cluster: CLUSTERS[0].value,
   logLevels: ['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'],
   refreshInterval: '',
   selectedRow: null,
-  selectedFields: ['level', 'timestamp', 'traceID', 'spanID', 'app', 'service', 'body'],
+  selectedFields: ['level', 'timestamp', 'cluster', 'traceID', 'spanID', 'app', 'service', 'body'],
   selectedLabels: [],
 };
 
@@ -81,9 +79,9 @@ type UserAction =
   | { type: 'FILTER_RM'; payload: Filter }
   | { type: 'FILTER_ADD'; payload: Filter }
   | { type: 'FILTER_ONLY'; payload: Filter }
+  | { type: 'FILTER_SET'; payload: Filter }
   | { type: 'SET_TIMERANGE'; payload: TimeRange }
   | { type: 'SET_DATASOURCE'; payload: string }
-  | { type: 'SET_CLUSTER'; payload: string }
   | { type: 'SET_LOGLEVELS'; payload: string[] }
   | { type: 'SET_REFRESH_INTERVAL'; payload: string }
   | { type: 'SET_LOG_DETAILS'; payload: LogDetailsSelection }
@@ -133,6 +131,8 @@ function userReducer(state: UserState, action: UserAction): UserState {
       return { ...state, filters: handleFilterChange(state.filters, action.payload, 'add') };
     case 'FILTER_ONLY':
       return { ...state, filters: handleFilterChange(state.filters, action.payload, 'only') };
+    case 'FILTER_SET':
+      return { ...state, filters: handleFilterChange(state.filters, action.payload, 'set') };
     case 'SET_TIMERANGE':
       return {
         ...state,
@@ -141,8 +141,6 @@ function userReducer(state: UserState, action: UserAction): UserState {
       };
     case 'SET_DATASOURCE':
       return { ...state, datasource: action.payload };
-    case 'SET_CLUSTER':
-      return { ...state, cluster: action.payload };
     case 'SET_LOGLEVELS':
       return { ...state, logLevels: action.payload };
     case 'SET_REFRESH_INTERVAL':
@@ -286,7 +284,10 @@ export function useSharedState(): StateContextType {
 function getUserState(): UserState {
   const savedState = localStorage.getItem('carboncat.userState');
   try {
-    return savedState ? JSON.parse(savedState) : initialUserState;
+    // Merge onto initialUserState so fields added after a user's state was
+    // last saved (e.g. a new field like `cluster`) fall back to their
+    // default instead of being `undefined`.
+    return savedState ? { ...initialUserState, ...JSON.parse(savedState) } : initialUserState;
   } catch (error) {
     console.error('could not parse userState, using initial state: ' + error);
   }
@@ -314,9 +315,6 @@ const userStateFromQueryParams = (u: URLSearchParams, persistantUserState: boole
   }
   if (u.get('ds')) {
     us.datasource = u.get('ds') as string;
-  }
-  if (u.get('cluster')) {
-    us.cluster = u.get('cluster') as string;
   }
   if (u.get('logLevels')) {
     us.logLevels = JSONparseDefault(atob(u.get('logLevels') as string), us.logLevels);
@@ -354,7 +352,7 @@ const JSONparseDefault = (v: string, d: any): any => {
   return d;
 };
 
-const handleFilterChange = (prevFilters: Filter[], filter: Filter, op: 'add' | 'rm' | 'only'): Filter[] => {
+const handleFilterChange = (prevFilters: Filter[], filter: Filter, op: 'add' | 'rm' | 'only' | 'set'): Filter[] => {
   const filters = (prevFilters: Filter[]) => {
     if (filter.key === 'timestamp') {
       return prevFilters;
@@ -362,6 +360,13 @@ const handleFilterChange = (prevFilters: Filter[], filter: Filter, op: 'add' | '
 
     if (op === 'only') {
       return [filter];
+    }
+
+    // Replace any existing filter(s) on this key (regardless of their value)
+    // with this one, leaving filters on other keys untouched. Used for
+    // exclusive-choice pickers like switching between clusters.
+    if (op === 'set') {
+      return [...prevFilters.filter((f) => f.key !== filter.key), filter];
     }
 
     const exists = prevFilters.some(

@@ -9,10 +9,6 @@ export const DATASOURCES: ToggleOption[] = [
   { value: "datasource-clickhouse-platform", label: "Platform Logs", icon: faServer },
 ];
 
-export const CLUSTERS: ToggleOption[] = [
-  { value: "test", label: "Test" },
-];
-
 
 type PluginVars = {
   from: string;

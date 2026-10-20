@@ -103,12 +103,16 @@ export async function getClusters(
   timeRange: TimeRange,
   setData: (data: Field[]) => void
 ): Promise<void> {
-  // Deliberately no time filter here - we want every cluster that has ever
-  // reported, not just ones active in the currently selected time range.
+  // Deliberately not tied to the dashboard's selected time range - we want
+  // every cluster that has reported recently, not just ones active in
+  // whatever range happens to be selected. Bounded to 30 days (comfortably
+  // covers the table's 14-day TTL) purely so ClickHouse can use partition
+  // pruning instead of scanning the entire table on every call.
   const rawSql = `
     SELECT DISTINCT ResourceAttributes['k8s.cluster.name'] AS cluster
     FROM ${tableName}
-    WHERE ResourceAttributes['k8s.cluster.name'] != ''
+    WHERE Timestamp >= now() - INTERVAL 30 DAY
+      AND ResourceAttributes['k8s.cluster.name'] != ''
     ORDER BY cluster
 `;
 

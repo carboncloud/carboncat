@@ -20,6 +20,7 @@ import { GenerateURLParams } from 'utils/url';
 import { faArrowUpRightFromSquare, faCopy, faSave } from '@fortawesome/free-solid-svg-icons';
 import { useSettings } from 'components/SettingsContext';
 import { SideMenu } from 'components/SideMenu';
+import { ClusterButtons } from 'components/ClusterButtons';
 import { Settings } from 'components/Settings';
 import { NotificationView } from 'components/NotificationView';
 import { SaveView } from 'components/SaveView';
@@ -28,7 +29,7 @@ import { ReleaseMessage } from 'components/ReleaseMessage';
 function PageOne() {
   const theme = useTheme2();
 
-  const keys = ['level', 'timestamp', 'traceID', 'spanID', 'app', 'service', 'team', 'body'];
+  const keys = ['level', 'timestamp', 'cluster', 'traceID', 'spanID', 'app', 'service', 'team', 'body'];
 
   const [chartWidth, setChartWidth] = useState<number>(200);
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -118,6 +119,7 @@ function PageOne() {
             userDispatch({ type: 'SET_DATASOURCE', payload: d });
           }}
         />
+        <ClusterButtons />
         <Button
           className="mr-2"
           options={{ label: 'Share link', disabled: false, icon: faArrowUpRightFromSquare }}

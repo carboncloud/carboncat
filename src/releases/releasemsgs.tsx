@@ -4,6 +4,22 @@ export type ReleaseInfo = {
 };
 
 export const Releases: Record<string, ReleaseInfo> = {
+  '0.0.25': {
+    notes: (
+      <>
+        <b>Updates</b>
+        <br />- Multicluster speedup
+      </>
+    ),
+  },
+  '0.0.24': {
+    notes: (
+      <>
+        <b>Updates</b>
+        <br />- Multicluster
+      </>
+    ),
+  },
   '0.0.23': {
     notes: (
       <>

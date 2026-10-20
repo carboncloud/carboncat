@@ -37,7 +37,7 @@ const initialUserState: UserState = {
   logLevels: ['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'],
   refreshInterval: '',
   selectedRow: null,
-  selectedFields: ['level', 'timestamp', 'traceID', 'spanID', 'app', 'service', 'body'],
+  selectedFields: ['level', 'timestamp', 'cluster', 'traceID', 'spanID', 'app', 'service', 'body'],
   selectedLabels: [],
 };
 
@@ -79,6 +79,7 @@ type UserAction =
   | { type: 'FILTER_RM'; payload: Filter }
   | { type: 'FILTER_ADD'; payload: Filter }
   | { type: 'FILTER_ONLY'; payload: Filter }
+  | { type: 'FILTER_SET'; payload: Filter }
   | { type: 'SET_TIMERANGE'; payload: TimeRange }
   | { type: 'SET_DATASOURCE'; payload: string }
   | { type: 'SET_LOGLEVELS'; payload: string[] }
@@ -130,6 +131,8 @@ function userReducer(state: UserState, action: UserAction): UserState {
       return { ...state, filters: handleFilterChange(state.filters, action.payload, 'add') };
     case 'FILTER_ONLY':
       return { ...state, filters: handleFilterChange(state.filters, action.payload, 'only') };
+    case 'FILTER_SET':
+      return { ...state, filters: handleFilterChange(state.filters, action.payload, 'set') };
     case 'SET_TIMERANGE':
       return {
         ...state,
@@ -281,7 +284,10 @@ export function useSharedState(): StateContextType {
 function getUserState(): UserState {
   const savedState = localStorage.getItem('carboncat.userState');
   try {
-    return savedState ? JSON.parse(savedState) : initialUserState;
+    // Merge onto initialUserState so fields added after a user's state was
+    // last saved (e.g. a new field like `cluster`) fall back to their
+    // default instead of being `undefined`.
+    return savedState ? { ...initialUserState, ...JSON.parse(savedState) } : initialUserState;
   } catch (error) {
     console.error('could not parse userState, using initial state: ' + error);
   }
@@ -346,7 +352,7 @@ const JSONparseDefault = (v: string, d: any): any => {
   return d;
 };
 
-const handleFilterChange = (prevFilters: Filter[], filter: Filter, op: 'add' | 'rm' | 'only'): Filter[] => {
+const handleFilterChange = (prevFilters: Filter[], filter: Filter, op: 'add' | 'rm' | 'only' | 'set'): Filter[] => {
   const filters = (prevFilters: Filter[]) => {
     if (filter.key === 'timestamp') {
       return prevFilters;
@@ -354,6 +360,13 @@ const handleFilterChange = (prevFilters: Filter[], filter: Filter, op: 'add' | '
 
     if (op === 'only') {
       return [filter];
+    }
+
+    // Replace any existing filter(s) on this key (regardless of their value)
+    // with this one, leaving filters on other keys untouched. Used for
+    // exclusive-choice pickers like switching between clusters.
+    if (op === 'set') {
+      return [...prevFilters.filter((f) => f.key !== filter.key), filter];
     }
 
     const exists = prevFilters.some(
